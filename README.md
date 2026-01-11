@@ -128,7 +128,7 @@ For detailed installation instructions, see [INSTALLATION.md](INSTALLATION.md)
 5. Session maintained until logout
 ```
 
-For complete technical details, see [RAPPORT_CORRECTIONS.md](RAPPORT_CORRECTIONS.md)
+For complete technical details, see [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md)
 
 ---
 
@@ -136,7 +136,7 @@ For complete technical details, see [RAPPORT_CORRECTIONS.md](RAPPORT_CORRECTIONS
 
 - **[INSTALLATION.md](INSTALLATION.md)** - Step-by-step installation guide
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
-- **[RAPPORT_CORRECTIONS.md](RAPPORT_CORRECTIONS.md)** - Complete technical documentation (French)
+- **[TECHNICAL_REPORT.md](TECHNICAL_REPORT.md)** - Complete technical documentation (French)
 
 ---
 
@@ -242,7 +242,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If you encounter issues:
 
-1. **Check the documentation:** [INSTALLATION.md](INSTALLATION.md) and [RAPPORT_CORRECTIONS.md](RAPPORT_CORRECTIONS.md)
+1. **Check the documentation:** [INSTALLATION.md](INSTALLATION.md) and [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md)
 2. **Verify PyLoad version:** Must be 0.5.0 or higher
 3. **Open an issue:** [GitHub Issues](https://github.com/jsoyer/Yape/issues)
 
