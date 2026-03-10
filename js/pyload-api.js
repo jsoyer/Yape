@@ -14,9 +14,9 @@ export async function getServerStatus(callback) {
     const timeoutId = setTimeout(() => serverStatusController.abort(), 5000);
     try {
         const res = await fetch(`${origin}/api/statusServer`, {
-            method: 'POST',
+            method: 'GET',
             redirect: 'error',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getAuthHeaders() },
+            headers: { ...getAuthHeaders() },
             signal: serverStatusController.signal
         });
         clearTimeout(timeoutId);
@@ -57,9 +57,9 @@ export async function getStatusDownloads(callback) {
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     try {
         const res = await fetch(`${origin}/api/statusDownloads`, {
-            method: 'POST',
+            method: 'GET',
             redirect: 'error',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getAuthHeaders() },
+            headers: { ...getAuthHeaders() },
             signal: controller.signal
         });
         clearTimeout(timeoutId);
@@ -80,9 +80,9 @@ export async function getQueueData(callback) {
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     try {
         const res = await fetch(`${origin}/api/getQueueData`, {
-            method: 'POST',
+            method: 'GET',
             redirect: 'error',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getAuthHeaders() },
+            headers: { ...getAuthHeaders() },
             signal: controller.signal
         });
         clearTimeout(timeoutId);
@@ -109,9 +109,9 @@ export async function getLimitSpeedStatus(callback) {
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     try {
         const res = await fetch(`${origin}/api/getConfigValue?category="download"&option="limit_speed"`, {
-            method: 'POST',
+            method: 'GET',
             redirect: 'error',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getAuthHeaders() },
+            headers: { ...getAuthHeaders() },
             signal: controller.signal
         });
         clearTimeout(timeoutId);
@@ -132,9 +132,9 @@ export async function setLimitSpeedStatus(limitSpeed, callback) {
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     try {
         const res = await fetch(`${origin}/api/setConfigValue?category="download"&option="limit_speed"&value="${limitSpeed}"`, {
-            method: 'POST',
+            method: 'GET',
             redirect: 'error',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getAuthHeaders() },
+            headers: { ...getAuthHeaders() },
             signal: controller.signal
         });
         clearTimeout(timeoutId);
@@ -155,11 +155,10 @@ export async function addPackage(name, url, callback) {
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     const safeName = name.replace(/[^a-z0-9._\-]/gi, '_');
     try {
-        const res = await fetch(`${origin}/api/addPackage`, {
-            method: 'POST',
+        const res = await fetch(`${origin}/api/addPackage?name="${encodeURIComponent(safeName)}"&links=["${encodeURIComponent(url)}"]`, {
+            method: 'GET',
             redirect: 'error',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getAuthHeaders() },
-            body: `name="${encodeURIComponent(safeName)}"&links=["${encodeURIComponent(url)}"]`,
+            headers: { ...getAuthHeaders() },
             signal: controller.signal
         });
         clearTimeout(timeoutId);
@@ -189,11 +188,10 @@ export async function checkURL(url, callback) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     try {
-        const res = await fetch(`${origin}/api/checkURLs`, {
-            method: 'POST',
+        const res = await fetch(`${origin}/api/checkURLs?urls=["${encodeURIComponent(url)}"]`, {
+            method: 'GET',
             redirect: 'error',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getAuthHeaders() },
-            body: `urls=["${encodeURIComponent(url)}"]`,
+            headers: { ...getAuthHeaders() },
             signal: controller.signal
         });
         clearTimeout(timeoutId);
