@@ -25,7 +25,7 @@ export async function getServerStatus(callback) {
             if (res.status === 404) { if (callback) callback(false, false, 'Server not found'); return; }
             const response = await res.json();
             if (res.status === 200) { if (callback) callback(true, false, null, response); }
-            else if (res.status === 403) { if (callback) callback(false, true, 'Unauthorized', response); }
+            else if (res.status === 401 || res.status === 403) { if (callback) callback(false, true, 'Unauthorized', response); }
             else if (Object.hasOwn(response, 'error')) { if (callback) callback(false, false, response.error); }
             else { if (callback) callback(false, false, null, response); }
         } catch { if (callback) callback(false, false, 'Server unreachable'); }
