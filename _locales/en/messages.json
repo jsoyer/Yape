@@ -1,0 +1,447 @@
+{
+  "extensionName": {
+    "message": "Yape",
+    "description": "Extension name"
+  },
+  "extensionDescription": {
+    "message": "Extension for PyLoad to easily monitor and add downloads",
+    "description": "Extension description in store"
+  },
+
+  "popupCurrentDownloads": {
+    "message": "Current Downloads",
+    "description": "Popup header title"
+  },
+  "popupFilter": {
+    "message": "Filter...",
+    "description": "Search input placeholder"
+  },
+  "popupNoActiveDownloads": {
+    "message": "No active downloads",
+    "description": "Empty downloads view"
+  },
+  "popupQueueEmpty": {
+    "message": "Queue is empty",
+    "description": "Empty queue view"
+  },
+  "popupCollectorEmpty": {
+    "message": "Collector is empty",
+    "description": "Empty collector view"
+  },
+  "popupDownloads": {
+    "message": "Downloads",
+    "description": "Tab label"
+  },
+  "popupQueue": {
+    "message": "Queue",
+    "description": "Tab label"
+  },
+  "popupCollector": {
+    "message": "Collector",
+    "description": "Tab label"
+  },
+  "popupStopAll": {
+    "message": "Stop all",
+    "description": "Action button"
+  },
+  "popupRetryFailed": {
+    "message": "Retry failed",
+    "description": "Action button"
+  },
+  "popupClearFinished": {
+    "message": "Clear finished",
+    "description": "Action button"
+  },
+  "popupAddUrls": {
+    "message": "Add URLs",
+    "description": "Multi-URL section label"
+  },
+  "popupOneUrlPerLine": {
+    "message": "One URL per line",
+    "description": "Multi-URL textarea placeholder"
+  },
+  "popupAddAll": {
+    "message": "Add all",
+    "description": "Multi-URL submit button"
+  },
+  "popupPageDownload": {
+    "message": "Page Download",
+    "description": "Page download section label"
+  },
+  "popupStartDownload": {
+    "message": "Start Download",
+    "description": "Page download button"
+  },
+  "popupCaptchaRequired": {
+    "message": "Captcha required —",
+    "description": "Captcha alert text"
+  },
+  "popupOpenPyload": {
+    "message": "open PyLoad",
+    "description": "Captcha link text"
+  },
+  "popupTypeAnswer": {
+    "message": "Type answer...",
+    "description": "Captcha input placeholder"
+  },
+  "popupFreeSpace": {
+    "message": "Free space: $1",
+    "description": "Free space display",
+    "placeholders": {
+      "1": { "content": "$1", "example": "12.5 GB" }
+    }
+  },
+  "popupDownloadAdded": {
+    "message": "Download added",
+    "description": "Success message after adding download"
+  },
+  "popupDownloadError": {
+    "message": "Error downloading package: $1",
+    "description": "Error message",
+    "placeholders": {
+      "1": { "content": "$1", "example": "Server error" }
+    }
+  },
+  "popupAlreadyInQueue": {
+    "message": "Download already in queue",
+    "description": "Shown when URL is already queued"
+  },
+  "popupNotLoggedIn": {
+    "message": "You are not logged in, please go to the extension's option page",
+    "description": "Login error in popup"
+  },
+  "popupUrlsAdded": {
+    "message": "$1 URL(s) added",
+    "description": "Multi-URL success",
+    "placeholders": {
+      "1": { "content": "$1", "example": "5" }
+    }
+  },
+  "popupUrlsFailed": {
+    "message": "$1 URL(s) failed to add",
+    "description": "Multi-URL error",
+    "placeholders": {
+      "1": { "content": "$1", "example": "2" }
+    }
+  },
+  "popupFailedRestarted": {
+    "message": "Failed downloads restarted",
+    "description": "Success message"
+  },
+  "popupFinishedCleared": {
+    "message": "Finished downloads cleared",
+    "description": "Success message"
+  },
+  "popupStats": {
+    "message": "$1 packages added",
+    "description": "Stats display",
+    "placeholders": {
+      "1": { "content": "$1", "example": "42" }
+    }
+  },
+  "popupLink": {
+    "message": "$1 link(s)",
+    "description": "Link count in queue/collector",
+    "placeholders": {
+      "1": { "content": "$1", "example": "3" }
+    }
+  },
+
+  "ariaPause": {
+    "message": "Pause downloads",
+    "description": "Pause button aria-label"
+  },
+  "ariaResume": {
+    "message": "Resume downloads",
+    "description": "Resume button aria-label"
+  },
+  "ariaSpeedLimit": {
+    "message": "Toggle speed limit",
+    "description": "Speed limit button aria-label"
+  },
+  "ariaProxy": {
+    "message": "Toggle proxy",
+    "description": "Proxy button aria-label"
+  },
+  "ariaOpenPyload": {
+    "message": "Open PyLoad",
+    "description": "External link button aria-label"
+  },
+  "ariaSettings": {
+    "message": "Settings",
+    "description": "Options button aria-label"
+  },
+  "ariaStop": {
+    "message": "Stop",
+    "description": "Stop download button title"
+  },
+  "ariaRestart": {
+    "message": "Restart",
+    "description": "Restart file button title"
+  },
+  "ariaDeletePackage": {
+    "message": "Delete package",
+    "description": "Delete package button title"
+  },
+  "ariaMoveUp": {
+    "message": "Move up",
+    "description": "Queue reorder button title"
+  },
+  "ariaMoveDown": {
+    "message": "Move down",
+    "description": "Queue reorder button title"
+  },
+  "ariaAddToQueue": {
+    "message": "Add to queue",
+    "description": "Collector push button title"
+  },
+  "ariaDelete": {
+    "message": "Delete",
+    "description": "Generic delete button title"
+  },
+
+  "optionsTitle": {
+    "message": "Yape Options",
+    "description": "Options page title"
+  },
+  "optionsServers": {
+    "message": "Servers",
+    "description": "Server section heading"
+  },
+  "optionsAddServer": {
+    "message": "+ Add server",
+    "description": "Add server button"
+  },
+  "optionsServerName": {
+    "message": "Server name",
+    "description": "Server name label"
+  },
+  "optionsServerNamePlaceholder": {
+    "message": "e.g. Home, VPS…",
+    "description": "Server name placeholder"
+  },
+  "optionsHost": {
+    "message": "PyLoad server's host",
+    "description": "Host input label"
+  },
+  "optionsHostTooltip": {
+    "message": "The domain name, IP address or hostname of the PyLoad server",
+    "description": "Host tooltip"
+  },
+  "optionsHostFeedback": {
+    "message": "Please provide a valid host",
+    "description": "Host validation error"
+  },
+  "optionsPort": {
+    "message": "PyLoad server's port",
+    "description": "Port input label"
+  },
+  "optionsPortTooltip": {
+    "message": "Default ports are 80 for HTTP and 443 HTTPS",
+    "description": "Port tooltip"
+  },
+  "optionsPortFeedback": {
+    "message": "Please provide a valid port",
+    "description": "Port validation error"
+  },
+  "optionsPath": {
+    "message": "PyLoad server's path",
+    "description": "Path input label"
+  },
+  "optionsPathTooltip": {
+    "message": "The path of the PyLoad server",
+    "description": "Path tooltip"
+  },
+  "optionsPathFeedback": {
+    "message": "Please provide a valid path",
+    "description": "Path validation error"
+  },
+  "optionsUseHttps": {
+    "message": "Use HTTPS",
+    "description": "HTTPS checkbox label"
+  },
+  "optionsCurrentUrl": {
+    "message": "Your PyLoad URL:",
+    "description": "Current URL section label"
+  },
+  "optionsLoggedIn": {
+    "message": "You are logged in",
+    "description": "Login status"
+  },
+  "optionsNotLoggedIn": {
+    "message": "You are not logged in",
+    "description": "Login status"
+  },
+  "optionsPleaseLogIn": {
+    "message": "Please log in",
+    "description": "Login prompt"
+  },
+  "optionsSave": {
+    "message": "Save",
+    "description": "Save button"
+  },
+  "optionsLogin": {
+    "message": "Login",
+    "description": "Login button"
+  },
+  "optionsLoginTitle": {
+    "message": "Login",
+    "description": "Login modal title"
+  },
+  "optionsLoginRequired": {
+    "message": "Login to PyLoad server is required.",
+    "description": "Login modal body text"
+  },
+  "optionsUsername": {
+    "message": "Username",
+    "description": "Username label"
+  },
+  "optionsPassword": {
+    "message": "Password",
+    "description": "Password label"
+  },
+  "optionsRemember": {
+    "message": "Remember credentials",
+    "description": "Remember checkbox label"
+  },
+  "optionsRememberWarning": {
+    "message": "Credentials will be saved to disk on this device.",
+    "description": "Remember credentials warning"
+  },
+  "optionsHttpWarning": {
+    "message": "Warning: HTTP selected. Credentials will be transmitted in cleartext.",
+    "description": "HTTP cleartext warning"
+  },
+  "optionsCancel": {
+    "message": "Cancel",
+    "description": "Cancel button"
+  },
+  "optionsCheckingStatus": {
+    "message": "Checking status...",
+    "description": "Spinner text while checking server status"
+  },
+  "optionsTooManyAttempts": {
+    "message": "Too many attempts. Try again in $1s.",
+    "description": "Rate limit message",
+    "placeholders": {
+      "1": { "content": "$1", "example": "30" }
+    }
+  },
+  "optionsNoServers": {
+    "message": "No servers configured.",
+    "description": "Empty server list"
+  },
+  "optionsActive": {
+    "message": "active",
+    "description": "Server badge"
+  },
+  "optionsInactive": {
+    "message": "inactive",
+    "description": "Server badge"
+  },
+  "optionsActivate": {
+    "message": "Activate",
+    "description": "Server activate button"
+  },
+  "optionsNewServer": {
+    "message": "New server",
+    "description": "Default new server name"
+  },
+  "optionsPermissionWarning": {
+    "message": "Not granting this permission will make the extension unusable.",
+    "description": "Permission request warning"
+  },
+
+  "optionsAccounts": {
+    "message": "Hoster Accounts",
+    "description": "Accounts section heading"
+  },
+  "optionsAddAccount": {
+    "message": "Add account",
+    "description": "Add account form heading"
+  },
+  "optionsPluginPlaceholder": {
+    "message": "Plugin (e.g. OneFichierCom)",
+    "description": "Plugin input placeholder"
+  },
+  "optionsAdd": {
+    "message": "Add",
+    "description": "Add button"
+  },
+  "optionsNoAccounts": {
+    "message": "No accounts configured",
+    "description": "Empty accounts list"
+  },
+  "optionsAccountAdded": {
+    "message": "Account added",
+    "description": "Success message"
+  },
+  "optionsAccountFailed": {
+    "message": "Failed to add account",
+    "description": "Error message"
+  },
+  "optionsAllFieldsRequired": {
+    "message": "All fields are required",
+    "description": "Validation error"
+  },
+  "optionsValid": {
+    "message": "valid",
+    "description": "Account status badge"
+  },
+  "optionsInvalid": {
+    "message": "invalid",
+    "description": "Account status badge"
+  },
+  "optionsRemove": {
+    "message": "Remove",
+    "description": "Remove account button"
+  },
+
+  "optionsServerLog": {
+    "message": "Server Log",
+    "description": "Log section heading"
+  },
+  "optionsLoadLog": {
+    "message": "Load",
+    "description": "Load log button"
+  },
+  "optionsLogEmpty": {
+    "message": "(empty)",
+    "description": "Empty log output"
+  },
+
+  "bgDownloadsComplete": {
+    "message": "All downloads complete",
+    "description": "Background notification when all downloads finish"
+  },
+  "bgInvalidCredentials": {
+    "message": "Invalid credentials, make sure you are logged in",
+    "description": "Context menu error"
+  },
+  "bgServerUnreachable": {
+    "message": "Server unreachable",
+    "description": "Context menu error"
+  },
+  "bgCheckUrlError": {
+    "message": "Error checking url: $1",
+    "description": "Context menu error",
+    "placeholders": {
+      "1": { "content": "$1", "example": "unknown error" }
+    }
+  },
+  "bgDownloadError": {
+    "message": "Error requesting download: $1",
+    "description": "Context menu error",
+    "placeholders": {
+      "1": { "content": "$1", "example": "unknown error" }
+    }
+  },
+  "bgDownloadAdded": {
+    "message": "Download added successfully",
+    "description": "Context menu success"
+  },
+  "bgContextMenu": {
+    "message": "Download with Yape",
+    "description": "Context menu item label"
+  }
+}

@@ -1,0 +1,317 @@
+{
+  "extensionName": {
+    "message": "Yape"
+  },
+  "extensionDescription": {
+    "message": "Extension pour PyLoad : surveiller et ajouter des telechargements"
+  },
+
+  "popupCurrentDownloads": {
+    "message": "Telechargements en cours"
+  },
+  "popupFilter": {
+    "message": "Filtrer..."
+  },
+  "popupNoActiveDownloads": {
+    "message": "Aucun telechargement actif"
+  },
+  "popupQueueEmpty": {
+    "message": "La file est vide"
+  },
+  "popupCollectorEmpty": {
+    "message": "Le collecteur est vide"
+  },
+  "popupDownloads": {
+    "message": "Telechargements"
+  },
+  "popupQueue": {
+    "message": "File"
+  },
+  "popupCollector": {
+    "message": "Collecteur"
+  },
+  "popupStopAll": {
+    "message": "Tout stopper"
+  },
+  "popupRetryFailed": {
+    "message": "Relancer les echecs"
+  },
+  "popupClearFinished": {
+    "message": "Supprimer termines"
+  },
+  "popupAddUrls": {
+    "message": "Ajouter des URLs"
+  },
+  "popupOneUrlPerLine": {
+    "message": "Une URL par ligne"
+  },
+  "popupAddAll": {
+    "message": "Tout ajouter"
+  },
+  "popupPageDownload": {
+    "message": "Telechargement de page"
+  },
+  "popupStartDownload": {
+    "message": "Lancer le telechargement"
+  },
+  "popupCaptchaRequired": {
+    "message": "Captcha requis —"
+  },
+  "popupOpenPyload": {
+    "message": "ouvrir PyLoad"
+  },
+  "popupTypeAnswer": {
+    "message": "Entrer la reponse..."
+  },
+  "popupFreeSpace": {
+    "message": "Espace libre : $1"
+  },
+  "popupDownloadAdded": {
+    "message": "Telechargement ajoute"
+  },
+  "popupDownloadError": {
+    "message": "Erreur : $1"
+  },
+  "popupAlreadyInQueue": {
+    "message": "Deja dans la file"
+  },
+  "popupNotLoggedIn": {
+    "message": "Non connecte, allez dans les options de l'extension"
+  },
+  "popupUrlsAdded": {
+    "message": "$1 URL(s) ajoutee(s)"
+  },
+  "popupUrlsFailed": {
+    "message": "$1 URL(s) en echec"
+  },
+  "popupFailedRestarted": {
+    "message": "Telechargements echoues relances"
+  },
+  "popupFinishedCleared": {
+    "message": "Telechargements termines supprimes"
+  },
+  "popupStats": {
+    "message": "$1 paquets ajoutes"
+  },
+  "popupLink": {
+    "message": "$1 lien(s)"
+  },
+
+  "ariaPause": {
+    "message": "Mettre en pause"
+  },
+  "ariaResume": {
+    "message": "Reprendre"
+  },
+  "ariaSpeedLimit": {
+    "message": "Limite de vitesse"
+  },
+  "ariaProxy": {
+    "message": "Activer/desactiver le proxy"
+  },
+  "ariaOpenPyload": {
+    "message": "Ouvrir PyLoad"
+  },
+  "ariaSettings": {
+    "message": "Parametres"
+  },
+  "ariaStop": {
+    "message": "Arreter"
+  },
+  "ariaRestart": {
+    "message": "Relancer"
+  },
+  "ariaDeletePackage": {
+    "message": "Supprimer le paquet"
+  },
+  "ariaMoveUp": {
+    "message": "Monter"
+  },
+  "ariaMoveDown": {
+    "message": "Descendre"
+  },
+  "ariaAddToQueue": {
+    "message": "Ajouter a la file"
+  },
+  "ariaDelete": {
+    "message": "Supprimer"
+  },
+
+  "optionsTitle": {
+    "message": "Options de Yape"
+  },
+  "optionsServers": {
+    "message": "Serveurs"
+  },
+  "optionsAddServer": {
+    "message": "+ Ajouter un serveur"
+  },
+  "optionsServerName": {
+    "message": "Nom du serveur"
+  },
+  "optionsServerNamePlaceholder": {
+    "message": "ex. Maison, VPS..."
+  },
+  "optionsHost": {
+    "message": "Adresse du serveur PyLoad"
+  },
+  "optionsHostTooltip": {
+    "message": "Le nom de domaine, l'adresse IP ou le nom d'hote du serveur PyLoad"
+  },
+  "optionsHostFeedback": {
+    "message": "Veuillez fournir un hote valide"
+  },
+  "optionsPort": {
+    "message": "Port du serveur PyLoad"
+  },
+  "optionsPortTooltip": {
+    "message": "Les ports par defaut sont 80 pour HTTP et 443 pour HTTPS"
+  },
+  "optionsPortFeedback": {
+    "message": "Veuillez fournir un port valide"
+  },
+  "optionsPath": {
+    "message": "Chemin du serveur PyLoad"
+  },
+  "optionsPathTooltip": {
+    "message": "Le chemin du serveur PyLoad"
+  },
+  "optionsPathFeedback": {
+    "message": "Veuillez fournir un chemin valide"
+  },
+  "optionsUseHttps": {
+    "message": "Utiliser HTTPS"
+  },
+  "optionsCurrentUrl": {
+    "message": "Votre URL PyLoad :"
+  },
+  "optionsLoggedIn": {
+    "message": "Vous etes connecte"
+  },
+  "optionsNotLoggedIn": {
+    "message": "Vous n'etes pas connecte"
+  },
+  "optionsPleaseLogIn": {
+    "message": "Veuillez vous connecter"
+  },
+  "optionsSave": {
+    "message": "Enregistrer"
+  },
+  "optionsLogin": {
+    "message": "Connexion"
+  },
+  "optionsLoginTitle": {
+    "message": "Connexion"
+  },
+  "optionsLoginRequired": {
+    "message": "La connexion au serveur PyLoad est requise."
+  },
+  "optionsUsername": {
+    "message": "Nom d'utilisateur"
+  },
+  "optionsPassword": {
+    "message": "Mot de passe"
+  },
+  "optionsRemember": {
+    "message": "Se souvenir des identifiants"
+  },
+  "optionsRememberWarning": {
+    "message": "Les identifiants seront enregistres sur cet appareil."
+  },
+  "optionsHttpWarning": {
+    "message": "Attention : HTTP selectionne. Les identifiants seront transmis en clair."
+  },
+  "optionsCancel": {
+    "message": "Annuler"
+  },
+  "optionsCheckingStatus": {
+    "message": "Verification du statut..."
+  },
+  "optionsTooManyAttempts": {
+    "message": "Trop de tentatives. Reessayez dans $1s."
+  },
+  "optionsNoServers": {
+    "message": "Aucun serveur configure."
+  },
+  "optionsActive": {
+    "message": "actif"
+  },
+  "optionsInactive": {
+    "message": "inactif"
+  },
+  "optionsActivate": {
+    "message": "Activer"
+  },
+  "optionsNewServer": {
+    "message": "Nouveau serveur"
+  },
+  "optionsPermissionWarning": {
+    "message": "Ne pas accorder cette permission rendra l'extension inutilisable."
+  },
+
+  "optionsAccounts": {
+    "message": "Comptes hebergeurs"
+  },
+  "optionsAddAccount": {
+    "message": "Ajouter un compte"
+  },
+  "optionsPluginPlaceholder": {
+    "message": "Plugin (ex. OneFichierCom)"
+  },
+  "optionsAdd": {
+    "message": "Ajouter"
+  },
+  "optionsNoAccounts": {
+    "message": "Aucun compte configure"
+  },
+  "optionsAccountAdded": {
+    "message": "Compte ajoute"
+  },
+  "optionsAccountFailed": {
+    "message": "Echec de l'ajout du compte"
+  },
+  "optionsAllFieldsRequired": {
+    "message": "Tous les champs sont requis"
+  },
+  "optionsValid": {
+    "message": "valide"
+  },
+  "optionsInvalid": {
+    "message": "invalide"
+  },
+  "optionsRemove": {
+    "message": "Supprimer"
+  },
+
+  "optionsServerLog": {
+    "message": "Log du serveur"
+  },
+  "optionsLoadLog": {
+    "message": "Charger"
+  },
+  "optionsLogEmpty": {
+    "message": "(vide)"
+  },
+
+  "bgDownloadsComplete": {
+    "message": "Tous les telechargements sont termines"
+  },
+  "bgInvalidCredentials": {
+    "message": "Identifiants invalides, verifiez que vous etes connecte"
+  },
+  "bgServerUnreachable": {
+    "message": "Serveur injoignable"
+  },
+  "bgCheckUrlError": {
+    "message": "Erreur de verification : $1"
+  },
+  "bgDownloadError": {
+    "message": "Erreur de telechargement : $1"
+  },
+  "bgDownloadAdded": {
+    "message": "Telechargement ajoute"
+  },
+  "bgContextMenu": {
+    "message": "Telecharger avec Yape"
+  }
+}
