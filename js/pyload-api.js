@@ -233,3 +233,24 @@ export async function getServerVersion(callback) {
         () => callback(null)
     );
 }
+
+export async function getEvents(uuid, callback) {
+    apiFetch(`/api/getEvents?uuid="${encodeURIComponent(uuid)}"`,
+        async res => { callback(await res.json()); },
+        () => callback(null)
+    );
+}
+
+export async function getQueuePackages(callback) {
+    apiFetch('/api/getQueueData',
+        async res => { callback(await res.json()); },
+        () => callback([])
+    );
+}
+
+export async function orderPackage(pid, position, callback) {
+    apiFetch(`/api/orderPackage?pid=${pid}&position=${position}`,
+        res => callback(res.ok),
+        () => callback(false)
+    );
+}

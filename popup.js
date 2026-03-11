@@ -4,7 +4,8 @@ import {
     addPackage, checkURL, getQueueData,
     togglePause, freeSpace, deleteFinished, restartFailed, stopAllDownloads, isCaptchaWaiting,
     stopDownload, restartFile, deletePackage, getCollectorData, pushToQueue,
-    getProxyStatus, toggleProxy, getServerVersion
+    getProxyStatus, toggleProxy, getServerVersion,
+    getEvents, getQueuePackages, orderPackage
 } from './js/pyload-api.js';
 
 let statusDiv = document.getElementById('status');
@@ -30,15 +31,18 @@ let restartFailedButton = document.getElementById('restartFailedButton');
 let deleteFinishedButton = document.getElementById('deleteFinishedButton');
 let viewTabs = document.getElementById('viewTabs');
 let downloadsTab = document.getElementById('downloadsTab');
+let queueTab = document.getElementById('queueTab');
 let collectorTab = document.getElementById('collectorTab');
+let queueDiv = document.getElementById('queueDiv');
 let collectorDiv = document.getElementById('collectorDiv');
 let serverVersionDiv = document.getElementById('serverVersionDiv');
 
 let limitSpeedStatus = true;
 let proxyStatus = false;
 let isPaused = false;
-let statusPollTimeout = null;
+let pollTimeout = null;
 let activeView = 'downloads';
+const eventUuid = crypto.randomUUID();
 
 function formatBytes(bytes) {
     if (bytes == null) return '';
@@ -93,6 +97,41 @@ function updateServerVersion() {
     });
 }
 
+// --- Event-driven polling ---
+
+function startEventLoop() {
+    getEvents(eventUuid, function(events) {
+        if (events === null) {
+            // getEvents unavailable — fall back to 3s status poll
+            pollTimeout = setTimeout(function() {
+                if (activeView === 'downloads') updateStatusDownloads();
+                else if (activeView === 'queue') updateQueueView();
+                startEventLoop();
+            }, 3000);
+            return;
+        }
+
+        const hasQueueEvent = events.some(e =>
+            e.destination === 'queue' || e.event === 'reload'
+        );
+        const hasCollectorEvent = events.some(e =>
+            e.destination === 'collector'
+        );
+
+        if (hasQueueEvent) {
+            if (activeView === 'downloads') updateStatusDownloads();
+            else if (activeView === 'queue') updateQueueView();
+        }
+        if (hasCollectorEvent && activeView === 'collector') {
+            updateCollectorView();
+        }
+
+        pollTimeout = setTimeout(startEventLoop, 1000);
+    });
+}
+
+// --- Downloads view ---
+
 function buildDownloadItem(download) {
     const pct = Math.min(100, Math.max(0, parseFloat(download.percent) || 0));
 
@@ -120,10 +159,7 @@ function buildDownloadItem(download) {
     stopBtn.innerHTML = '<i class="fa fa-stop"></i>';
     stopBtn.onclick = function() {
         stopBtn.disabled = true;
-        stopDownload(download.fid, function() {
-            clearTimeout(statusPollTimeout);
-            updateStatusDownloads(true);
-        });
+        stopDownload(download.fid, function() { updateStatusDownloads(); });
     };
 
     const restartBtn = document.createElement('button');
@@ -132,10 +168,7 @@ function buildDownloadItem(download) {
     restartBtn.innerHTML = '<i class="fa fa-redo"></i>';
     restartBtn.onclick = function() {
         restartBtn.disabled = true;
-        restartFile(download.fid, function() {
-            clearTimeout(statusPollTimeout);
-            updateStatusDownloads(true);
-        });
+        restartFile(download.fid, function() { updateStatusDownloads(); });
     };
 
     const delBtn = document.createElement('button');
@@ -144,10 +177,7 @@ function buildDownloadItem(download) {
     delBtn.innerHTML = '<i class="fa fa-trash"></i>';
     delBtn.onclick = function() {
         delBtn.disabled = true;
-        deletePackage(download.packageID, function() {
-            clearTimeout(statusPollTimeout);
-            updateStatusDownloads(true);
-        });
+        deletePackage(download.packageID, function() { updateStatusDownloads(); });
     };
 
     rightDiv.appendChild(etaSpan);
@@ -176,7 +206,7 @@ function buildDownloadItem(download) {
     return wrapper;
 }
 
-function updateStatusDownloads(loop) {
+function updateStatusDownloads() {
     getStatusDownloads(function(status) {
         let totalSpeed = 0;
         statusDiv.textContent = '';
@@ -199,12 +229,83 @@ function updateStatusDownloads(loop) {
             : '';
         actionButtons.hidden = false;
         updateCaptchaAlert();
-        if (loop) {
-            clearTimeout(statusPollTimeout);
-            statusPollTimeout = setTimeout(updateStatusDownloads, 3000, true);
-        }
     });
 }
+
+// --- Queue view ---
+
+function buildQueueItem(pkg, index, total) {
+    const row = document.createElement('div');
+    row.className = 'd-flex align-items-center gap-1';
+    row.style.cssText = 'margin-bottom: 8px; font-size: small';
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'ellipsis flex-grow-1';
+    nameDiv.textContent = pkg.name;
+
+    const countSpan = document.createElement('span');
+    countSpan.className = 'text-muted';
+    countSpan.style.whiteSpace = 'nowrap';
+    const linkCount = pkg.links ? pkg.links.length : 0;
+    countSpan.textContent = `${linkCount} link${linkCount !== 1 ? 's' : ''}`;
+
+    const upBtn = document.createElement('button');
+    upBtn.className = 'btn btn-sm btn-outline-secondary py-0 px-1';
+    upBtn.title = 'Move up';
+    upBtn.innerHTML = '<i class="fa fa-arrow-up"></i>';
+    upBtn.disabled = index === 0;
+    upBtn.onclick = function() {
+        upBtn.disabled = true;
+        orderPackage(pkg.pid, index - 1, function() { updateQueueView(); });
+    };
+
+    const downBtn = document.createElement('button');
+    downBtn.className = 'btn btn-sm btn-outline-secondary py-0 px-1';
+    downBtn.title = 'Move down';
+    downBtn.innerHTML = '<i class="fa fa-arrow-down"></i>';
+    downBtn.disabled = index === total - 1;
+    downBtn.onclick = function() {
+        downBtn.disabled = true;
+        orderPackage(pkg.pid, index + 1, function() { updateQueueView(); });
+    };
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
+    delBtn.title = 'Delete package';
+    delBtn.innerHTML = '<i class="fa fa-trash"></i>';
+    delBtn.onclick = function() {
+        delBtn.disabled = true;
+        deletePackage(pkg.pid, function() { updateQueueView(); });
+    };
+
+    row.appendChild(nameDiv);
+    row.appendChild(countSpan);
+    row.appendChild(upBtn);
+    row.appendChild(downBtn);
+    row.appendChild(delBtn);
+    return row;
+}
+
+function updateQueueView() {
+    getQueuePackages(function(packages) {
+        queueDiv.textContent = '';
+
+        if (!packages.length) {
+            const empty = document.createElement('div');
+            empty.className = 'text-center m-4';
+            empty.style.color = 'gray';
+            empty.textContent = 'Queue is empty';
+            queueDiv.appendChild(empty);
+            return;
+        }
+
+        packages.forEach(function(pkg, index) {
+            queueDiv.appendChild(buildQueueItem(pkg, index, packages.length));
+        });
+    });
+}
+
+// --- Collector view ---
 
 function updateCollectorView() {
     getCollectorData(function(packages) {
@@ -240,9 +341,7 @@ function updateCollectorView() {
             queueBtn.innerHTML = '<i class="fa fa-play"></i>';
             queueBtn.onclick = function() {
                 queueBtn.disabled = true;
-                pushToQueue(pkg.pid, function() {
-                    switchTab('downloads');
-                });
+                pushToQueue(pkg.pid, function() { switchTab('downloads'); });
             };
 
             const delBtn = document.createElement('button');
@@ -251,9 +350,7 @@ function updateCollectorView() {
             delBtn.innerHTML = '<i class="fa fa-trash"></i>';
             delBtn.onclick = function() {
                 delBtn.disabled = true;
-                deletePackage(pkg.pid, function() {
-                    updateCollectorView();
-                });
+                deletePackage(pkg.pid, function() { updateCollectorView(); });
             };
 
             row.appendChild(nameDiv);
@@ -265,24 +362,33 @@ function updateCollectorView() {
     });
 }
 
+// --- Tab switching ---
+
 function switchTab(tab) {
     activeView = tab;
+    clearTimeout(pollTimeout);
+    pollTimeout = null;
+
+    downloadsTab.className = tab === 'downloads' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-secondary';
+    queueTab.className = tab === 'queue' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-secondary';
+    collectorTab.className = tab === 'collector' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-secondary';
+
+    statusDiv.hidden = tab !== 'downloads';
+    queueDiv.hidden = tab !== 'queue';
+    collectorDiv.hidden = tab !== 'collector';
+
     if (tab === 'downloads') {
-        downloadsTab.className = 'btn btn-sm btn-primary';
-        collectorTab.className = 'btn btn-sm btn-outline-secondary';
-        statusDiv.hidden = false;
-        collectorDiv.hidden = true;
-        clearTimeout(statusPollTimeout);
-        updateStatusDownloads(true);
+        updateStatusDownloads();
+        startEventLoop();
+    } else if (tab === 'queue') {
+        updateQueueView();
+        startEventLoop();
     } else {
-        downloadsTab.className = 'btn btn-sm btn-outline-secondary';
-        collectorTab.className = 'btn btn-sm btn-primary';
-        statusDiv.hidden = true;
-        collectorDiv.hidden = false;
-        clearTimeout(statusPollTimeout);
         updateCollectorView();
     }
 }
+
+// --- Utility ---
 
 function setButtonLoading(btn, loading) {
     if (loading) {
@@ -308,6 +414,8 @@ function setSuccessMessage(message, timeout = 3000) {
     if (timeout > 0) setTimeout(() => setSuccessMessage(''), timeout);
 }
 
+// --- Button handlers ---
+
 downloadButton.onclick = function() {
     downloadButton.disabled = true;
     chrome.tabs.query({active: true, lastFocusedWindow: true}, tabs => {
@@ -321,7 +429,7 @@ downloadButton.onclick = function() {
             }
             downloadDiv.hidden = true;
             setSuccessMessage('Download added');
-            updateStatusDownloads(false);
+            updateStatusDownloads();
         });
     });
 };
@@ -356,8 +464,7 @@ pauseButton.onclick = function() {
 stopAllButton.onclick = function() {
     setButtonLoading(stopAllButton, true);
     stopAllDownloads(function() {
-        clearTimeout(statusPollTimeout);
-        updateStatusDownloads(true);
+        updateStatusDownloads();
         setButtonLoading(stopAllButton, false);
     });
 };
@@ -374,14 +481,16 @@ deleteFinishedButton.onclick = function() {
     setButtonLoading(deleteFinishedButton, true);
     deleteFinished(function(success) {
         if (success) setSuccessMessage('Finished downloads cleared');
-        clearTimeout(statusPollTimeout);
-        updateStatusDownloads(true);
+        updateStatusDownloads();
         setButtonLoading(deleteFinishedButton, false);
     });
 };
 
 downloadsTab.onclick = () => switchTab('downloads');
+queueTab.onclick = () => switchTab('queue');
 collectorTab.onclick = () => switchTab('collector');
+
+// --- Init ---
 
 pullStoredData(function() {
     externalLinkButton.onclick = () => chrome.tabs.create({ url: `${origin}/home` });
@@ -395,7 +504,8 @@ pullStoredData(function() {
         }
 
         updatePauseButton(response && response.paused);
-        updateStatusDownloads(true);
+        updateStatusDownloads();
+        startEventLoop();
         updateLimitSpeedStatus();
         updateProxyStatus();
         updateFreeSpace();
