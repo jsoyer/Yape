@@ -20,3 +20,21 @@ body {
     outline: none !important;
     box-shadow: none;
 }
+
+/* Drag & drop */
+[draggable="true"] {
+    cursor: grab;
+}
+
+[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+.yape-drag-over {
+    border-top: 2px solid var(--bs-primary);
+    padding-top: 6px;
+}
+
+.yape-dragging {
+    opacity: 0.4;
+}

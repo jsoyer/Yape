@@ -254,3 +254,48 @@ export async function orderPackage(pid, position, callback) {
         () => callback(false)
     );
 }
+
+export async function getCaptchaTask(callback) {
+    apiFetch('/api/getCaptchaTask?exclusive=true',
+        async res => {
+            const task = await res.json();
+            callback(task && task.tid !== -1 ? task : null);
+        },
+        () => callback(null)
+    );
+}
+
+export async function setCaptchaResult(tid, result, callback) {
+    apiFetch(`/api/setCaptchaResult?tid=${tid}&result="${encodeURIComponent(result)}"`,
+        res => callback(res.ok),
+        () => callback(false)
+    );
+}
+
+export async function getAccounts(callback) {
+    apiFetch('/api/getAccounts?refresh=false',
+        async res => { callback(await res.json()); },
+        () => callback({})
+    );
+}
+
+export async function updateAccount(plugin, login, password, callback) {
+    apiFetch(`/api/updateAccount?plugin="${encodeURIComponent(plugin)}"&account="${encodeURIComponent(login)}"&password="${encodeURIComponent(password)}"`,
+        res => callback(res.ok),
+        () => callback(false)
+    );
+}
+
+export async function removeAccount(plugin, login, callback) {
+    apiFetch(`/api/removeAccount?plugin="${encodeURIComponent(plugin)}"&account="${encodeURIComponent(login)}"`,
+        res => callback(res.ok),
+        () => callback(false)
+    );
+}
+
+export async function getLog(offset, callback) {
+    apiFetch(`/api/getLog?offset=${offset}`,
+        async res => { callback(await res.json()); },
+        () => callback([])
+    );
+}

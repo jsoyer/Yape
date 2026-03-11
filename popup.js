@@ -1,12 +1,16 @@
-import { pullStoredData, origin } from './js/storage.js';
+import { pullStoredData, origin, servers, activeServerId, setActiveServer, getStats, incrementStat } from './js/storage.js';
 import {
     isLoggedIn, getStatusDownloads, getLimitSpeedStatus, setLimitSpeedStatus,
     addPackage, checkURL, getQueueData,
-    togglePause, freeSpace, deleteFinished, restartFailed, stopAllDownloads, isCaptchaWaiting,
+    togglePause, freeSpace, deleteFinished, restartFailed, stopAllDownloads,
     stopDownload, restartFile, deletePackage, getCollectorData, pushToQueue,
     getProxyStatus, toggleProxy, getServerVersion,
-    getEvents, getQueuePackages, orderPackage
+    getEvents, getQueuePackages, orderPackage,
+    getCaptchaTask, setCaptchaResult
 } from './js/pyload-api.js';
+import { applyI18n, msg } from './js/i18n.js';
+
+applyI18n();
 
 let statusDiv = document.getElementById('status');
 let errorLabel = document.getElementById('error');
@@ -24,6 +28,13 @@ let pauseButton = document.getElementById('pauseButton');
 let pauseIcon = document.getElementById('pauseIcon');
 let captchaAlert = document.getElementById('captchaAlert');
 let captchaLink = document.getElementById('captchaLink');
+let captchaImage = document.getElementById('captchaImage');
+let captchaForm = document.getElementById('captchaForm');
+let captchaInput = document.getElementById('captchaInput');
+let captchaSubmit = document.getElementById('captchaSubmit');
+let multiUrlDiv = document.getElementById('multiUrlDiv');
+let multiUrlInput = document.getElementById('multiUrlInput');
+let multiUrlButton = document.getElementById('multiUrlButton');
 let freeSpaceDiv = document.getElementById('freeSpaceDiv');
 let actionButtons = document.getElementById('actionButtons');
 let stopAllButton = document.getElementById('stopAllButton');
@@ -36,12 +47,18 @@ let collectorTab = document.getElementById('collectorTab');
 let queueDiv = document.getElementById('queueDiv');
 let collectorDiv = document.getElementById('collectorDiv');
 let serverVersionDiv = document.getElementById('serverVersionDiv');
+let serverSelect = document.getElementById('serverSelect');
+let searchInput = document.getElementById('searchInput');
+let statsDiv = document.getElementById('statsDiv');
 
 let limitSpeedStatus = true;
 let proxyStatus = false;
 let isPaused = false;
 let pollTimeout = null;
 let activeView = 'downloads';
+let currentCaptchaTask = null;
+let searchTerm = '';
+let dragSrcIndex = null;
 const eventUuid = crypto.randomUUID();
 
 function formatBytes(bytes) {
@@ -54,15 +71,15 @@ function formatBytes(bytes) {
 function updatePauseButton(paused) {
     isPaused = !!paused;
     pauseIcon.className = isPaused ? 'fa fa-play small' : 'fa fa-pause small';
-    pauseButton.style.color = isPaused ? '#28a745' : '';
-    pauseButton.setAttribute('aria-label', isPaused ? 'Resume downloads' : 'Pause downloads');
+    pauseButton.style.color = isPaused ? 'var(--bs-success)' : '';
+    pauseButton.setAttribute('aria-label', isPaused ? msg('ariaResume') : msg('ariaPause'));
     pauseButton.disabled = false;
 }
 
 function updateLimitSpeedStatus() {
     getLimitSpeedStatus(function(status) {
         limitSpeedStatus = status;
-        limitSpeedButton.style.color = limitSpeedStatus ? 'black' : '#007bff';
+        limitSpeedButton.style.color = limitSpeedStatus ? '' : 'var(--bs-primary)';
         limitSpeedButton.disabled = false;
     });
 }
@@ -70,21 +87,34 @@ function updateLimitSpeedStatus() {
 function updateProxyStatus() {
     getProxyStatus(function(status) {
         proxyStatus = status;
-        proxyButton.style.color = proxyStatus ? '#007bff' : '';
+        proxyButton.style.color = proxyStatus ? 'var(--bs-primary)' : '';
         proxyButton.disabled = false;
     });
 }
 
 function updateCaptchaAlert() {
-    isCaptchaWaiting(function(waiting) {
-        captchaAlert.hidden = !waiting;
+    getCaptchaTask(function(task) {
+        currentCaptchaTask = task;
+        if (!task) {
+            captchaAlert.hidden = true;
+            captchaImage.hidden = true;
+            captchaForm.hidden = true;
+            captchaInput.value = '';
+            return;
+        }
+        captchaAlert.hidden = false;
+        if (task.src) {
+            captchaImage.src = task.src;
+            captchaImage.hidden = false;
+            captchaForm.hidden = false;
+        }
     });
 }
 
 function updateFreeSpace() {
     freeSpace(function(bytes) {
         if (bytes == null) return;
-        freeSpaceDiv.textContent = `Free space: ${formatBytes(bytes)}`;
+        freeSpaceDiv.textContent = msg('popupFreeSpace', [formatBytes(bytes)]);
         freeSpaceDiv.hidden = false;
     });
 }
@@ -97,12 +127,28 @@ function updateServerVersion() {
     });
 }
 
+function updateStats() {
+    getStats(function(stats) {
+        if (!stats.packagesAdded) return;
+        statsDiv.textContent = msg('popupStats', [String(stats.packagesAdded)]);
+        statsDiv.hidden = false;
+    });
+}
+
+// --- Search ---
+
+searchInput.oninput = function() {
+    searchTerm = searchInput.value.toLowerCase();
+    if (activeView === 'downloads') updateStatusDownloads();
+    else if (activeView === 'queue') updateQueueView();
+    else updateCollectorView();
+};
+
 // --- Event-driven polling ---
 
 function startEventLoop() {
     getEvents(eventUuid, function(events) {
         if (events === null) {
-            // getEvents unavailable — fall back to 3s status poll
             pollTimeout = setTimeout(function() {
                 if (activeView === 'downloads') updateStatusDownloads();
                 else if (activeView === 'queue') updateQueueView();
@@ -155,7 +201,7 @@ function buildDownloadItem(download) {
 
     const stopBtn = document.createElement('button');
     stopBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
-    stopBtn.title = 'Stop';
+    stopBtn.title = msg('ariaStop');
     stopBtn.innerHTML = '<i class="fa fa-stop"></i>';
     stopBtn.onclick = function() {
         stopBtn.disabled = true;
@@ -164,7 +210,7 @@ function buildDownloadItem(download) {
 
     const restartBtn = document.createElement('button');
     restartBtn.className = 'btn btn-sm btn-outline-secondary py-0 px-1';
-    restartBtn.title = 'Restart';
+    restartBtn.title = msg('ariaRestart');
     restartBtn.innerHTML = '<i class="fa fa-redo"></i>';
     restartBtn.onclick = function() {
         restartBtn.disabled = true;
@@ -173,7 +219,7 @@ function buildDownloadItem(download) {
 
     const delBtn = document.createElement('button');
     delBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
-    delBtn.title = 'Delete package';
+    delBtn.title = msg('ariaDeletePackage');
     delBtn.innerHTML = '<i class="fa fa-trash"></i>';
     delBtn.onclick = function() {
         delBtn.disabled = true;
@@ -211,14 +257,17 @@ function updateStatusDownloads() {
         let totalSpeed = 0;
         statusDiv.textContent = '';
 
-        if (status.length === 0) {
+        const filtered = searchTerm
+            ? status.filter(d => d.name.toLowerCase().includes(searchTerm))
+            : status;
+
+        if (filtered.length === 0) {
             const empty = document.createElement('div');
-            empty.className = 'text-center m-4';
-            empty.style.color = 'gray';
-            empty.textContent = 'No active downloads';
+            empty.className = 'text-center m-4 text-muted';
+            empty.textContent = msg('popupNoActiveDownloads');
             statusDiv.appendChild(empty);
         } else {
-            status.forEach(function(download) {
+            filtered.forEach(function(download) {
                 totalSpeed += download.speed;
                 statusDiv.appendChild(buildDownloadItem(download));
             });
@@ -232,12 +281,42 @@ function updateStatusDownloads() {
     });
 }
 
-// --- Queue view ---
+// --- Queue view with drag & drop ---
 
 function buildQueueItem(pkg, index, total) {
     const row = document.createElement('div');
     row.className = 'd-flex align-items-center gap-1';
     row.style.cssText = 'margin-bottom: 8px; font-size: small';
+    row.draggable = true;
+    row.dataset.index = index;
+    row.dataset.pid = pkg.pid;
+
+    row.ondragstart = function(e) {
+        dragSrcIndex = index;
+        row.classList.add('yape-dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(index));
+    };
+    row.ondragend = function() {
+        row.classList.remove('yape-dragging');
+        dragSrcIndex = null;
+        queueDiv.querySelectorAll('.yape-drag-over').forEach(el => el.classList.remove('yape-drag-over'));
+    };
+    row.ondragover = function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropMode = 'move';
+        queueDiv.querySelectorAll('.yape-drag-over').forEach(el => el.classList.remove('yape-drag-over'));
+        if (dragSrcIndex !== index) row.classList.add('yape-drag-over');
+    };
+    row.ondragleave = function() {
+        row.classList.remove('yape-drag-over');
+    };
+    row.ondrop = function(e) {
+        e.preventDefault();
+        row.classList.remove('yape-drag-over');
+        if (dragSrcIndex === null || dragSrcIndex === index) return;
+        orderPackage(pkg.pid, index, function() { updateQueueView(); });
+    };
 
     const nameDiv = document.createElement('div');
     nameDiv.className = 'ellipsis flex-grow-1';
@@ -247,11 +326,11 @@ function buildQueueItem(pkg, index, total) {
     countSpan.className = 'text-muted';
     countSpan.style.whiteSpace = 'nowrap';
     const linkCount = pkg.links ? pkg.links.length : 0;
-    countSpan.textContent = `${linkCount} link${linkCount !== 1 ? 's' : ''}`;
+    countSpan.textContent = msg('popupLink', [String(linkCount)]);
 
     const upBtn = document.createElement('button');
     upBtn.className = 'btn btn-sm btn-outline-secondary py-0 px-1';
-    upBtn.title = 'Move up';
+    upBtn.title = msg('ariaMoveUp');
     upBtn.innerHTML = '<i class="fa fa-arrow-up"></i>';
     upBtn.disabled = index === 0;
     upBtn.onclick = function() {
@@ -261,7 +340,7 @@ function buildQueueItem(pkg, index, total) {
 
     const downBtn = document.createElement('button');
     downBtn.className = 'btn btn-sm btn-outline-secondary py-0 px-1';
-    downBtn.title = 'Move down';
+    downBtn.title = msg('ariaMoveDown');
     downBtn.innerHTML = '<i class="fa fa-arrow-down"></i>';
     downBtn.disabled = index === total - 1;
     downBtn.onclick = function() {
@@ -271,7 +350,7 @@ function buildQueueItem(pkg, index, total) {
 
     const delBtn = document.createElement('button');
     delBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
-    delBtn.title = 'Delete package';
+    delBtn.title = msg('ariaDeletePackage');
     delBtn.innerHTML = '<i class="fa fa-trash"></i>';
     delBtn.onclick = function() {
         delBtn.disabled = true;
@@ -290,17 +369,20 @@ function updateQueueView() {
     getQueuePackages(function(packages) {
         queueDiv.textContent = '';
 
-        if (!packages.length) {
+        const filtered = searchTerm
+            ? packages.filter(p => p.name.toLowerCase().includes(searchTerm))
+            : packages;
+
+        if (!filtered.length) {
             const empty = document.createElement('div');
-            empty.className = 'text-center m-4';
-            empty.style.color = 'gray';
-            empty.textContent = 'Queue is empty';
+            empty.className = 'text-center m-4 text-muted';
+            empty.textContent = msg('popupQueueEmpty');
             queueDiv.appendChild(empty);
             return;
         }
 
-        packages.forEach(function(pkg, index) {
-            queueDiv.appendChild(buildQueueItem(pkg, index, packages.length));
+        filtered.forEach(function(pkg, index) {
+            queueDiv.appendChild(buildQueueItem(pkg, index, filtered.length));
         });
     });
 }
@@ -311,16 +393,19 @@ function updateCollectorView() {
     getCollectorData(function(packages) {
         collectorDiv.textContent = '';
 
-        if (!packages.length) {
+        const filtered = searchTerm
+            ? packages.filter(p => p.name.toLowerCase().includes(searchTerm))
+            : packages;
+
+        if (!filtered.length) {
             const empty = document.createElement('div');
-            empty.className = 'text-center m-4';
-            empty.style.color = 'gray';
-            empty.textContent = 'Collector is empty';
+            empty.className = 'text-center m-4 text-muted';
+            empty.textContent = msg('popupCollectorEmpty');
             collectorDiv.appendChild(empty);
             return;
         }
 
-        packages.forEach(function(pkg) {
+        filtered.forEach(function(pkg) {
             const row = document.createElement('div');
             row.className = 'd-flex align-items-center gap-1';
             row.style.cssText = 'margin-bottom: 8px; font-size: small';
@@ -333,11 +418,11 @@ function updateCollectorView() {
             countSpan.className = 'text-muted';
             countSpan.style.whiteSpace = 'nowrap';
             const linkCount = pkg.links ? pkg.links.length : 0;
-            countSpan.textContent = `${linkCount} link${linkCount !== 1 ? 's' : ''}`;
+            countSpan.textContent = msg('popupLink', [String(linkCount)]);
 
             const queueBtn = document.createElement('button');
             queueBtn.className = 'btn btn-sm btn-outline-primary py-0 px-1';
-            queueBtn.title = 'Add to queue';
+            queueBtn.title = msg('ariaAddToQueue');
             queueBtn.innerHTML = '<i class="fa fa-play"></i>';
             queueBtn.onclick = function() {
                 queueBtn.disabled = true;
@@ -346,7 +431,7 @@ function updateCollectorView() {
 
             const delBtn = document.createElement('button');
             delBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
-            delBtn.title = 'Delete';
+            delBtn.title = msg('ariaDelete');
             delBtn.innerHTML = '<i class="fa fa-trash"></i>';
             delBtn.onclick = function() {
                 delBtn.disabled = true;
@@ -423,13 +508,15 @@ downloadButton.onclick = function() {
         const name = tabs[0].title;
         addPackage(name, url, function(success, errorMessage) {
             if (!success) {
-                setErrorMessage(`Error downloading package: ${errorMessage}`);
+                setErrorMessage(msg('popupDownloadError', [errorMessage]));
                 downloadButton.disabled = false;
                 return;
             }
             downloadDiv.hidden = true;
-            setSuccessMessage('Download added');
+            incrementStat('packagesAdded');
+            setSuccessMessage(msg('popupDownloadAdded'));
             updateStatusDownloads();
+            updateStats();
         });
     });
 };
@@ -447,7 +534,7 @@ proxyButton.onclick = function() {
     toggleProxy(function(active) {
         if (active !== null) {
             proxyStatus = active;
-            proxyButton.style.color = proxyStatus ? '#007bff' : '';
+            proxyButton.style.color = proxyStatus ? 'var(--bs-primary)' : '';
         }
         proxyButton.disabled = false;
     });
@@ -472,7 +559,7 @@ stopAllButton.onclick = function() {
 restartFailedButton.onclick = function() {
     setButtonLoading(restartFailedButton, true);
     restartFailed(function() {
-        setSuccessMessage('Failed downloads restarted');
+        setSuccessMessage(msg('popupFailedRestarted'));
         setButtonLoading(restartFailedButton, false);
     });
 };
@@ -480,7 +567,7 @@ restartFailedButton.onclick = function() {
 deleteFinishedButton.onclick = function() {
     setButtonLoading(deleteFinishedButton, true);
     deleteFinished(function(success) {
-        if (success) setSuccessMessage('Finished downloads cleared');
+        if (success) setSuccessMessage(msg('popupFinishedCleared'));
         updateStatusDownloads();
         setButtonLoading(deleteFinishedButton, false);
     });
@@ -490,15 +577,60 @@ downloadsTab.onclick = () => switchTab('downloads');
 queueTab.onclick = () => switchTab('queue');
 collectorTab.onclick = () => switchTab('collector');
 
+captchaInput.onkeydown = function(e) {
+    if (e.key === 'Enter') captchaSubmit.click();
+};
+
+captchaSubmit.onclick = function() {
+    if (!currentCaptchaTask) return;
+    const result = captchaInput.value.trim();
+    if (!result) return;
+    captchaSubmit.disabled = true;
+    setCaptchaResult(currentCaptchaTask.tid, result, function() {
+        captchaInput.value = '';
+        captchaSubmit.disabled = false;
+        currentCaptchaTask = null;
+        updateCaptchaAlert();
+    });
+};
+
+multiUrlButton.onclick = function() {
+    const lines = multiUrlInput.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    if (!lines.length) return;
+    setButtonLoading(multiUrlButton, true);
+    let done = 0;
+    let errors = 0;
+    lines.forEach(function(url) {
+        const name = url.split('/').pop() || url;
+        addPackage(name, url, function(success) {
+            done++;
+            if (!success) errors++;
+            if (done === lines.length) {
+                setButtonLoading(multiUrlButton, false);
+                if (errors === 0) {
+                    multiUrlInput.value = '';
+                    incrementStat('packagesAdded');
+                    setSuccessMessage(msg('popupUrlsAdded', [String(lines.length)]));
+                } else {
+                    setErrorMessage(msg('popupUrlsFailed', [String(errors)]));
+                }
+                updateStatusDownloads();
+                updateStats();
+            }
+        });
+    });
+};
+
 // --- Init ---
 
 pullStoredData(function() {
+    applyI18n();
     externalLinkButton.onclick = () => chrome.tabs.create({ url: `${origin}/home` });
     captchaLink.onclick = () => chrome.tabs.create({ url: `${origin}/home` });
 
     isLoggedIn(function(loggedIn, unauthorized, error, response) {
         if (!loggedIn) {
-            setErrorMessage(`You are not logged in, please go to the extension's option page`);
+            setErrorMessage(msg('popupNotLoggedIn'));
             statusDiv.textContent = '';
             return;
         }
@@ -510,7 +642,25 @@ pullStoredData(function() {
         updateProxyStatus();
         updateFreeSpace();
         updateServerVersion();
+        updateStats();
         viewTabs.hidden = false;
+        multiUrlDiv.hidden = false;
+        searchInput.hidden = false;
+
+        if (servers.length > 1) {
+            serverSelect.textContent = '';
+            servers.forEach(function(s) {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name;
+                opt.selected = s.id === activeServerId;
+                serverSelect.appendChild(opt);
+            });
+            serverSelect.hidden = false;
+            serverSelect.onchange = function() {
+                setActiveServer(serverSelect.value, () => location.reload());
+            };
+        }
 
         chrome.tabs.query({active: true, lastFocusedWindow: true}, tabs => {
             const url = tabs[0].url;
@@ -521,7 +671,7 @@ pullStoredData(function() {
                 getQueueData(function(urls) {
                     pageDownloadDiv.hidden = false;
                     if (urls.includes(url)) {
-                        setErrorMessage('Download already in queue');
+                        setErrorMessage(msg('popupAlreadyInQueue'));
                         return;
                     }
                     downloadDiv.hidden = false;

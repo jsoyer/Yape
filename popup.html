@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <script src="js/theme.js"></script>
   <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="css/popup.css">
   <link rel="stylesheet" type="text/css" href="css/all.min.css">
@@ -10,36 +11,46 @@
 
 <body>
   <div class="d-flex align-items-center" style="margin-bottom: 8px">
-    <div class="font-weight-bold">Current Downloads</div>
+    <div class="font-weight-bold" data-i18n="popupCurrentDownloads">Current Downloads</div>
     <div id="totalSpeed" class="font-weight-bold" style="margin-left: 4px"></div>
+    <select id="serverSelect" class="form-select form-select-sm ms-2" style="width: auto; font-size: 11px; padding: 1px 20px 1px 6px; height: auto" hidden></select>
     <div class="ms-auto">
-      <button id="pauseButton" class="btn" disabled aria-label="Pause downloads">
+      <button id="pauseButton" class="btn" disabled data-i18n-aria="ariaPause" aria-label="Pause downloads">
         <i id="pauseIcon" class="fa fa-pause small"></i>
       </button>
-      <button id="limitSpeedButton" class="btn" disabled aria-label="Toggle speed limit">
+      <button id="limitSpeedButton" class="btn" disabled data-i18n-aria="ariaSpeedLimit" aria-label="Toggle speed limit">
         <i class="fa fa-infinity small"></i>
       </button>
-      <button id="proxyButton" class="btn" disabled aria-label="Toggle proxy">
+      <button id="proxyButton" class="btn" disabled data-i18n-aria="ariaProxy" aria-label="Toggle proxy">
         <i class="fa fa-exchange-alt small"></i>
       </button>
-      <button id="externalLinkButton" class="btn" aria-label="Open PyLoad">
+      <button id="externalLinkButton" class="btn" data-i18n-aria="ariaOpenPyload" aria-label="Open PyLoad">
         <i class="fa fa-external-link-alt small"></i>
       </button>
-      <button id="optionsButton" class="btn" aria-label="Settings">
+      <button id="optionsButton" class="btn" data-i18n-aria="ariaSettings" aria-label="Settings">
         <i class="fa fa-cog small"></i>
       </button>
     </div>
   </div>
 
   <div id="viewTabs" class="d-flex gap-1 mb-2" style="font-size: small" hidden>
-    <button id="downloadsTab" class="btn btn-sm btn-primary">Downloads</button>
-    <button id="queueTab" class="btn btn-sm btn-outline-secondary">Queue</button>
-    <button id="collectorTab" class="btn btn-sm btn-outline-secondary">Collector</button>
+    <button id="downloadsTab" class="btn btn-sm btn-primary" data-i18n="popupDownloads">Downloads</button>
+    <button id="queueTab" class="btn btn-sm btn-outline-secondary" data-i18n="popupQueue">Queue</button>
+    <button id="collectorTab" class="btn btn-sm btn-outline-secondary" data-i18n="popupCollector">Collector</button>
   </div>
 
-  <div id="captchaAlert" class="alert alert-warning py-2 small text-center mb-2" hidden>
-    <i class="fa fa-robot me-2"></i>Captcha waiting —
-    <span id="captchaLink" style="cursor:pointer; text-decoration:underline">open PyLoad</span>
+  <input type="text" id="searchInput" class="form-control form-control-sm mb-2" data-i18n-placeholder="popupFilter" placeholder="Filter..." hidden>
+
+  <div id="captchaAlert" class="mb-2" hidden>
+    <div class="alert alert-warning py-2 small mb-1">
+      <i class="fa fa-robot me-2"></i><span data-i18n="popupCaptchaRequired">Captcha required —</span>
+      <span id="captchaLink" style="cursor:pointer; text-decoration:underline" data-i18n="popupOpenPyload">open PyLoad</span>
+    </div>
+    <img id="captchaImage" class="d-block mx-auto mb-1" style="max-width:100%; border-radius:4px" alt="captcha" hidden>
+    <div id="captchaForm" class="d-flex gap-1" hidden>
+      <input type="text" id="captchaInput" class="form-control form-control-sm" data-i18n-placeholder="popupTypeAnswer" placeholder="Type answer...">
+      <button id="captchaSubmit" class="btn btn-sm btn-warning">OK</button>
+    </div>
   </div>
 
   <div id="status">
@@ -53,25 +64,33 @@
 
   <div id="freeSpaceDiv" class="text-center text-muted small mt-1" hidden></div>
   <div id="serverVersionDiv" class="text-center text-muted small" hidden></div>
+  <div id="statsDiv" class="text-center text-muted small" hidden></div>
 
   <div id="actionButtons" class="d-flex justify-content-center gap-2 mt-2" hidden>
     <button id="stopAllButton" class="btn btn-sm btn-outline-danger">
-      <i class="fa fa-stop me-1"></i>Stop all
+      <i class="fa fa-stop me-1"></i><span data-i18n="popupStopAll">Stop all</span>
     </button>
     <button id="restartFailedButton" class="btn btn-sm btn-outline-warning">
-      <i class="fa fa-redo me-1"></i>Retry failed
+      <i class="fa fa-redo me-1"></i><span data-i18n="popupRetryFailed">Retry failed</span>
     </button>
     <button id="deleteFinishedButton" class="btn btn-sm btn-outline-secondary">
-      <i class="fa fa-check me-1"></i>Clear finished
+      <i class="fa fa-check me-1"></i><span data-i18n="popupClearFinished">Clear finished</span>
     </button>
+  </div>
+
+  <div id="multiUrlDiv" hidden>
+    <div class="dropdown-divider" style="margin: 12px 0 8px;"></div>
+    <label class="font-weight-bold" data-i18n="popupAddUrls">Add URLs</label>
+    <textarea id="multiUrlInput" class="form-control form-control-sm mt-1" rows="3" data-i18n-placeholder="popupOneUrlPerLine" placeholder="One URL per line"></textarea>
+    <button id="multiUrlButton" class="btn btn-sm btn-primary mt-1 w-100" data-i18n="popupAddAll">Add all</button>
   </div>
 
   <div id="pageDownloadDiv" hidden>
     <div class="dropdown-divider" style="margin: 20px 0 12px;"></div>
-    <label class="font-weight-bold">Page Download</label>
+    <label class="font-weight-bold" data-i18n="popupPageDownload">Page Download</label>
     <div id="downloadDiv" class="text-center m-2" hidden>
       <div id="downloadLabel"></div>
-      <button type="button" class="btn btn-primary" id="download" style="margin-top: 12px">Start Download</button>
+      <button type="button" class="btn btn-primary" id="download" style="margin-top: 12px" data-i18n="popupStartDownload">Start Download</button>
     </div>
   </div>
 

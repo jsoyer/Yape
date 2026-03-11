@@ -5,6 +5,8 @@ export function buildOrigin(protocol, ip, port, path) {
 }
 
 export let serverPort, serverIp, serverProtocol, serverPath, origin;
+export let servers = [];
+export let activeServerId = null;
 let username = '', password = '';
 
 async function getOrCreateCredKey() {
@@ -46,21 +48,53 @@ async function decryptCredential(b64, key) {
     }
 }
 
-export function pullStoredData(callback) {
-    chrome.storage.local.get(['serverIp', 'serverPort', 'serverPath', 'serverProtocol'], function(data) {
-        serverIp = data.serverIp || 'localhost';
-        serverPort = data.serverPort || 8001;
-        serverPath = data.serverPath || '/';
-        serverProtocol = data.serverProtocol || 'https';
+function applyActiveServer() {
+    const active = servers.find(s => s.id === activeServerId) || servers[0] || null;
+    if (active) {
+        serverIp = active.serverIp;
+        serverPort = active.serverPort;
+        serverProtocol = active.serverProtocol;
+        serverPath = active.serverPath;
         origin = buildOrigin(serverProtocol, serverIp, serverPort, serverPath);
-        chrome.storage.session.get(['username', 'password'], function(session) {
-            if (session.username) {
-                username = session.username;
-                password = session.password;
-                if (callback) callback(data);
+    } else {
+        serverIp = 'localhost';
+        serverPort = 8001;
+        serverProtocol = 'https';
+        serverPath = '/';
+        origin = buildOrigin(serverProtocol, serverIp, serverPort, serverPath);
+    }
+}
+
+export function pullStoredData(callback) {
+    chrome.storage.local.get(['servers', 'activeServerId', 'serverIp', 'serverPort', 'serverPath', 'serverProtocol'], function(data) {
+        if (data.servers && data.servers.length > 0) {
+            servers = data.servers;
+            activeServerId = data.activeServerId || servers[0].id;
+        } else if (data.serverIp) {
+            const id = crypto.randomUUID();
+            servers = [{ id, name: 'Default', serverIp: data.serverIp, serverPort: data.serverPort || 8001, serverProtocol: data.serverProtocol || 'https', serverPath: data.serverPath || '/' }];
+            activeServerId = id;
+            chrome.storage.local.set({ servers, activeServerId });
+        } else {
+            servers = [];
+            activeServerId = null;
+        }
+
+        applyActiveServer();
+
+        const credPrefix = activeServerId ? `creds_${activeServerId}` : 'creds_default';
+        chrome.storage.session.get([`${credPrefix}_user`, `${credPrefix}_pass`], function(session) {
+            if (session[`${credPrefix}_user`]) {
+                username = session[`${credPrefix}_user`];
+                password = session[`${credPrefix}_pass`] || '';
+                if (callback) callback();
             } else {
-                chrome.storage.local.get(['username', 'password', 'credentialsEncrypted'], async function(local) {
-                    if (local.credentialsEncrypted && local.username) {
+                chrome.storage.local.get([`${credPrefix}_user`, `${credPrefix}_pass`, `${credPrefix}_enc`, 'credKey', 'username', 'password', 'credentialsEncrypted'], async function(local) {
+                    if (local[`${credPrefix}_enc`] && local[`${credPrefix}_user`]) {
+                        const key = await getOrCreateCredKey();
+                        username = await decryptCredential(local[`${credPrefix}_user`], key);
+                        password = await decryptCredential(local[`${credPrefix}_pass`] || '', key);
+                    } else if (local.credentialsEncrypted && local.username) {
                         const key = await getOrCreateCredKey();
                         username = await decryptCredential(local.username, key);
                         password = await decryptCredential(local.password || '', key);
@@ -68,7 +102,7 @@ export function pullStoredData(callback) {
                         username = local.username || '';
                         password = local.password || '';
                     }
-                    if (callback) callback(data);
+                    if (callback) callback();
                 });
             }
         });
@@ -78,23 +112,31 @@ export function pullStoredData(callback) {
 export function setCredentials(u, p, remember, callback) {
     username = u;
     password = p;
-    chrome.storage.session.set({ username, password }, async function() {
+    const credPrefix = activeServerId ? `creds_${activeServerId}` : 'creds_default';
+    const sessionData = {};
+    sessionData[`${credPrefix}_user`] = u;
+    sessionData[`${credPrefix}_pass`] = p;
+    chrome.storage.session.set(sessionData, async function() {
         if (remember) {
             const key = await getOrCreateCredKey();
             const encUser = await encryptCredential(u, key);
             const encPass = await encryptCredential(p, key);
-            chrome.storage.local.set({ username: encUser, password: encPass, credentialsEncrypted: true }, function() {
+            const localData = {};
+            localData[`${credPrefix}_user`] = encUser;
+            localData[`${credPrefix}_pass`] = encPass;
+            localData[`${credPrefix}_enc`] = true;
+            chrome.storage.local.set(localData, function() {
                 if (callback) callback();
             });
         } else {
-            chrome.storage.local.remove(['username', 'password', 'credentialsEncrypted'], function() {
+            chrome.storage.local.remove([`${credPrefix}_user`, `${credPrefix}_pass`, `${credPrefix}_enc`], function() {
                 if (callback) callback();
             });
         }
     });
 }
 
-export function setOrigin(ip, port, protocol, path, callback) {
+export function setOrigin(ip, port, protocol, path, name, callback) {
     const candidate = buildOrigin(protocol, ip, port, path);
     try { new URL(candidate); } catch { if (callback) callback(); return; }
     serverIp = ip;
@@ -102,12 +144,49 @@ export function setOrigin(ip, port, protocol, path, callback) {
     serverProtocol = protocol;
     serverPath = path;
     origin = candidate;
-    chrome.storage.local.set({
-        serverIp: serverIp,
-        serverPort: serverPort,
-        serverProtocol: serverProtocol,
-        serverPath: serverPath
-    }, function () {
+
+    if (activeServerId) {
+        const idx = servers.findIndex(s => s.id === activeServerId);
+        if (idx !== -1) {
+            servers[idx] = { ...servers[idx], serverIp: ip, serverPort: port, serverProtocol: protocol, serverPath: path, name: name || servers[idx].name };
+        }
+    }
+    chrome.storage.local.set({ servers }, function() {
+        if (callback) callback();
+    });
+}
+
+export function addServer(config, callback) {
+    const id = crypto.randomUUID();
+    const server = {
+        id,
+        name: config.name || 'New server',
+        serverIp: config.serverIp || 'localhost',
+        serverPort: config.serverPort || 8001,
+        serverProtocol: config.serverProtocol || 'https',
+        serverPath: config.serverPath || '/'
+    };
+    servers.push(server);
+    chrome.storage.local.set({ servers }, function() {
+        if (callback) callback(server);
+    });
+}
+
+export function removeServer(id, callback) {
+    servers = servers.filter(s => s.id !== id);
+    if (activeServerId === id) {
+        activeServerId = servers[0]?.id || null;
+        applyActiveServer();
+    }
+    chrome.storage.local.set({ servers, activeServerId }, function() {
+        if (callback) callback();
+    });
+}
+
+export function setActiveServer(id, callback) {
+    activeServerId = id;
+    applyActiveServer();
+    chrome.storage.local.set({ activeServerId }, function() {
         if (callback) callback();
     });
 }
@@ -119,4 +198,18 @@ export function getAuthHeaders() {
     } catch {
         return {};
     }
+}
+
+export function incrementStat(key) {
+    chrome.storage.local.get(['downloadStats'], function(data) {
+        const stats = data.downloadStats || {};
+        stats[key] = (stats[key] || 0) + 1;
+        chrome.storage.local.set({ downloadStats: stats });
+    });
+}
+
+export function getStats(callback) {
+    chrome.storage.local.get(['downloadStats'], function(data) {
+        callback(data.downloadStats || {});
+    });
 }

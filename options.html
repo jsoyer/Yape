@@ -2,54 +2,67 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <script src="js/theme.js"></script>
   <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="css/all.min.css">
   <link rel="stylesheet" type="text/css" href="css/options.css">
-  <title>Yape Options</title>
+  <title data-i18n="optionsTitle">Yape Options</title>
 </head>
 <body>
-  <div class="text-center h1 m-5">
+  <div class="text-center h1 m-5" data-i18n="optionsTitle">
     Yape Options
   </div>
+  <div class="d-flex justify-content-center mb-4">
+    <div style="width: 400px">
+      <h5 data-i18n="optionsServers">Servers</h5>
+      <div id="serverListDiv" class="mb-2 small"></div>
+      <button id="addServerButton" class="btn btn-sm btn-outline-primary" data-i18n="optionsAddServer">+ Add server</button>
+    </div>
+  </div>
+
   <div class="d-flex justify-content-center">
     <form>
       <div class="mb-3">
-        <label for="serverIp">PyLoad server's host</label>
-        <i class="fa text-primary fa-info-circle ms-2" data-bs-toggle="tooltip" data-bs-placement="right" title="The domain name, IP address or hostname of the PyLoad server"></i>
+        <label for="serverName" data-i18n="optionsServerName">Server name</label>
+        <input type="text" class="form-control" id="serverName" data-i18n-placeholder="optionsServerNamePlaceholder" placeholder="e.g. Home, VPS…">
+      </div>
+      <div class="mb-3">
+        <label for="serverIp" data-i18n="optionsHost">PyLoad server's host</label>
+        <i class="fa text-primary fa-info-circle ms-2" data-bs-toggle="tooltip" data-bs-placement="right" data-i18n-title="optionsHostTooltip" title="The domain name, IP address or hostname of the PyLoad server"></i>
         <input type="text" class="form-control" id="serverIp">
-        <div id="serverIpFeedback" class="invalid-feedback">
+        <div id="serverIpFeedback" class="invalid-feedback" data-i18n="optionsHostFeedback">
           Please provide a valid host
         </div>
       </div>
       <div class="mb-3">
-        <label for="serverPort">PyLoad server's port</label>
-        <i class="fa text-primary fa-info-circle ms-2" data-bs-toggle="tooltip" data-bs-placement="right" title="Default ports are 80 for HTTP and 443 HTTPS"></i>
+        <label for="serverPort" data-i18n="optionsPort">PyLoad server's port</label>
+        <i class="fa text-primary fa-info-circle ms-2" data-bs-toggle="tooltip" data-bs-placement="right" data-i18n-title="optionsPortTooltip" title="Default ports are 80 for HTTP and 443 HTTPS"></i>
         <input type="number" class="form-control" id="serverPort">
-        <div id="serverPortFeedback" class="invalid-feedback">
+        <div id="serverPortFeedback" class="invalid-feedback" data-i18n="optionsPortFeedback">
           Please provide a valid port
         </div>
       </div>
       <div class="mb-3">
-        <label for="serverPath">PyLoad server's path</label>
-        <i class="fa text-primary fa-info-circle ms-2" data-bs-toggle="tooltip" data-bs-placement="right" title="The path of the PyLoad server"></i>
+        <label for="serverPath" data-i18n="optionsPath">PyLoad server's path</label>
+        <i class="fa text-primary fa-info-circle ms-2" data-bs-toggle="tooltip" data-bs-placement="right" data-i18n-title="optionsPathTooltip" title="The path of the PyLoad server"></i>
         <input type="text" class="form-control" id="serverPath">
-        <div id="serverPathFeedback" class="invalid-feedback">
+        <div id="serverPathFeedback" class="invalid-feedback" data-i18n="optionsPathFeedback">
           Please provide a valid path
         </div>
       </div>
       <div class="form-check flex items-center">
         <input type="checkbox" class="form-check-input" id="useHTTPS">
-        <label class="form-check-label ms-3" for="useHTTPS">Use HTTPS</label>
+        <label class="form-check-label ms-3" for="useHTTPS" data-i18n="optionsUseHttps">Use HTTPS</label>
       </div>
       <div class="mb-3 flex items-center justify-content-center mt-4">
-        <label class="h5">Your PyLoad URL:</label>
+        <label class="h5" data-i18n="optionsCurrentUrl">Your PyLoad URL:</label>
         <div class="flex text-center mt-2">
           <label class="h6" id="currentURL"></label>
         </div>
       </div>
       <div class="d-flex justify-content-center">
         <div id="loginStatusOK" class="alert alert-success mt-2" hidden>
-          <i class="fa fa-check small me-3"></i>You are logged in
+          <i class="fa fa-check small me-3"></i><span data-i18n="optionsLoggedIn">You are logged in</span>
         </div>
         <div id="loginStatusKO" class="alert alert-danger mt-2" hidden>
           <i class="fa fa-times small me-3"></i>You are not logged in
@@ -61,48 +74,81 @@
   </div>
   <div class="d-flex justify-content-center">
     <div class="m-2">
-      <button id="saveButton" class="btn btn-primary m-1">Save</button>
-      <button id="loginButton" class="btn btn-primary m-1" hidden>Login</button>
+      <button id="saveButton" class="btn btn-primary m-1" data-i18n="optionsSave">Save</button>
+      <button id="loginButton" class="btn btn-primary m-1" hidden data-i18n="optionsLogin">Login</button>
     </div>
   </div>
 
+  <div class="d-flex justify-content-center mt-5">
+    <div style="width: 400px">
+      <h5 data-i18n="optionsAccounts">Hoster Accounts</h5>
+      <div id="accountsDiv" class="mb-3 small">
+        <div class="text-muted text-center">Loading…</div>
+      </div>
+      <div class="border rounded p-3">
+        <div class="mb-2 fw-bold small" data-i18n="optionsAddAccount">Add account</div>
+        <div class="mb-2">
+          <input type="text" class="form-control form-control-sm" id="accountPlugin" data-i18n-placeholder="optionsPluginPlaceholder" placeholder="Plugin (e.g. OneFichierCom)">
+        </div>
+        <div class="mb-2">
+          <input type="text" class="form-control form-control-sm" id="accountLogin" data-i18n-placeholder="optionsUsername" placeholder="Username" autocomplete="username">
+        </div>
+        <div class="mb-2">
+          <input type="password" class="form-control form-control-sm" id="accountPassword" data-i18n-placeholder="optionsPassword" placeholder="Password" autocomplete="new-password">
+        </div>
+        <button id="addAccountButton" class="btn btn-sm btn-primary w-100" data-i18n="optionsAdd">Add</button>
+        <div id="accountFeedback" class="mt-1 small text-danger" hidden></div>
+        <div id="accountSuccess" class="mt-1 small text-success" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-center mt-5 mb-5">
+    <div style="width: 400px">
+      <div class="d-flex align-items-center mb-2">
+        <h5 class="mb-0" data-i18n="optionsServerLog">Server Log</h5>
+        <button id="loadLogButton" class="btn btn-sm btn-outline-secondary ms-auto" data-i18n="optionsLoadLog">Load</button>
+      </div>
+      <pre id="logOutput" class="border rounded p-2 small" style="max-height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-all" hidden></pre>
+    </div>
+  </div>
 
   <div id="loginModal" class="modal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Login</h5>
+          <h5 class="modal-title" data-i18n="optionsLoginTitle">Login</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <p>Login to PyLoad server is required.</p>
+          <p data-i18n="optionsLoginRequired">Login to PyLoad server is required.</p>
           <form>
             <div class="mb-3">
-              <label for="username">Username</label>
+              <label for="username" data-i18n="optionsUsername">Username</label>
               <input type="text" class="form-control" id="username" autocomplete="username" maxlength="128">
             </div>
             <div class="mb-3">
-              <label for="password">Password</label>
+              <label for="password" data-i18n="optionsPassword">Password</label>
               <input type="password" class="form-control" id="password" autocomplete="current-password" maxlength="128">
             </div>
             <div class="form-check mb-2">
               <input type="checkbox" class="form-check-input" id="rememberCredentials">
-              <label class="form-check-label" for="rememberCredentials">Remember credentials</label>
+              <label class="form-check-label" for="rememberCredentials" data-i18n="optionsRemember">Remember credentials</label>
             </div>
-            <div id="rememberWarning" class="alert alert-warning py-1 small" hidden>
+            <div id="rememberWarning" class="alert alert-warning py-1 small" hidden data-i18n="optionsRememberWarning">
               Credentials will be saved to disk on this device.
             </div>
             <div class="d-flex justify-content-center">
               <div id="alertDanger" class="alert alert-danger m-2" hidden></div>
             </div>
           </form>
-          <div id="httpWarning" class="alert alert-warning mx-auto mt-3" style="max-width: 400px; display: none;">
+          <div id="httpWarning" class="alert alert-warning mx-auto mt-3" style="max-width: 400px; display: none;" data-i18n="optionsHttpWarning">
               Warning: HTTP selected. Credentials will be transmitted in cleartext.
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button id="loginButtonModal" type="button" class="btn btn-primary">Login</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="optionsCancel">Cancel</button>
+          <button id="loginButtonModal" type="button" class="btn btn-primary" data-i18n="optionsLogin">Login</button>
         </div>
       </div>
     </div>

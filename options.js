@@ -1,6 +1,12 @@
-import { pullStoredData, setOrigin, origin, serverIp, serverPort, serverProtocol, serverPath } from './js/storage.js';
-import { login, isLoggedIn, abortServerStatus } from './js/pyload-api.js';
+import { pullStoredData, setOrigin, origin, serverIp, serverPort, serverProtocol, serverPath, servers, activeServerId, addServer, removeServer, setActiveServer } from './js/storage.js';
+import { login, isLoggedIn, abortServerStatus, getAccounts, updateAccount, removeAccount, getLog } from './js/pyload-api.js';
+import { applyI18n, msg } from './js/i18n.js';
 
+applyI18n();
+
+let serverNameInput = document.getElementById('serverName');
+let serverListDiv = document.getElementById('serverListDiv');
+let addServerButton = document.getElementById('addServerButton');
 let usernameInput = document.getElementById('username');
 let passwordInput = document.getElementById('password');
 let serverIpInput = document.getElementById('serverIp');
@@ -80,13 +86,14 @@ function updateLoggedInStatus(callback) {
         loginStatusKODiv.innerHTML = `<i class="fa fa-times small me-3"></i>`;
         const msgSpan = document.createElement('span');
         if (!loggedIn && unauthorized) {
-            msgSpan.textContent = 'Please log in';
+            msgSpan.textContent = msg('optionsPleaseLogIn');
         } else {
-            msgSpan.textContent = error ? error : 'You are not logged in';
+            msgSpan.textContent = error ? error : msg('optionsNotLoggedIn');
         }
         loginStatusKODiv.appendChild(msgSpan);
         loginButton.hidden = !unauthorized;
         saveButton.disabled = false;
+        if (loggedIn) loadAccounts();
         if (callback) callback();
     });
 }
@@ -101,7 +108,7 @@ function requestPermission(callback) {
             }, function(granted) {
                 if (callback) {
                     if (!granted) {
-                        alert('Not granting this permission will make the extension unusable.');
+                        alert(msg('optionsPermissionWarning'));
                     }
                     callback(granted);
                 }
@@ -180,8 +187,9 @@ function updateCurrentURL() {
 }
 
 saveButton.onclick = function(ev) {
-    setOrigin(serverIpInput.value, serverPortInput.value, getProtocol(), serverPathInput.value, function() {
-        requestPermission(function(granted) {
+    setOrigin(serverIpInput.value, serverPortInput.value, getProtocol(), serverPathInput.value, serverNameInput.value.trim() || 'Default', function() {
+        requestPermission(function() {
+            renderServerList();
             updateLoggedInStatus();
         });
     });
@@ -202,7 +210,7 @@ loginButtonModal.onclick = function(ev) {
     const now = Date.now();
     if (now < loginLockedUntil) {
         const secs = Math.ceil((loginLockedUntil - now) / 1000);
-        setDangerMessage(`Too many attempts. Try again in ${secs}s.`, 0);
+        setDangerMessage(msg('optionsTooManyAttempts', [String(secs)]), 0);
         return;
     }
     setDangerMessage('');
@@ -219,7 +227,7 @@ loginButtonModal.onclick = function(ev) {
                 const lockSecs = Math.min(30 * Math.pow(2, loginFailures - 3), 300);
                 loginLockedUntil = Date.now() + lockSecs * 1000;
                 saveLoginRateLimit();
-                setDangerMessage(`Too many attempts. Try again in ${lockSecs}s.`, 0);
+                setDangerMessage(msg('optionsTooManyAttempts', [String(lockSecs)]), 0);
             } else {
                 saveLoginRateLimit();
                 setDangerMessage(error_msg, 0);
@@ -228,15 +236,195 @@ loginButtonModal.onclick = function(ev) {
     });
 }
 
-loadLoginRateLimit();
-pullStoredData(function() {
+// --- Server Management ---
+
+function renderServerList() {
+    serverListDiv.textContent = '';
+    if (!servers.length) {
+        const noServers = document.createElement('span');
+        noServers.className = 'text-muted';
+        noServers.textContent = msg('optionsNoServers');
+        serverListDiv.appendChild(noServers);
+        return;
+    }
+    servers.forEach(function(s) {
+        const row = document.createElement('div');
+        row.className = 'd-flex align-items-center gap-2 mb-1';
+
+        const badge = document.createElement('span');
+        badge.className = `badge ${s.id === activeServerId ? 'bg-primary' : 'bg-secondary'}`;
+        badge.textContent = s.id === activeServerId ? msg('optionsActive') : msg('optionsInactive');
+
+        const label = document.createElement('span');
+        label.className = 'flex-grow-1';
+        label.textContent = `${s.name} — ${s.serverProtocol}://${s.serverIp}:${s.serverPort}${s.serverPath}`;
+
+        const activateBtn = document.createElement('button');
+        activateBtn.className = 'btn btn-sm btn-outline-primary py-0 px-1';
+        activateBtn.textContent = msg('optionsActivate');
+        activateBtn.hidden = s.id === activeServerId;
+        activateBtn.onclick = function() {
+            setActiveServer(s.id, function() {
+                pullStoredData(function() {
+                    renderServerList();
+                    updateForm();
+                    updateLoggedInStatus();
+                });
+            });
+        };
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.disabled = servers.length <= 1;
+        deleteBtn.onclick = function() {
+            removeServer(s.id, function() {
+                pullStoredData(function() {
+                    renderServerList();
+                    updateForm();
+                    updateLoggedInStatus();
+                });
+            });
+        };
+
+        row.appendChild(badge);
+        row.appendChild(label);
+        row.appendChild(activateBtn);
+        row.appendChild(deleteBtn);
+        serverListDiv.appendChild(row);
+    });
+}
+
+function updateForm() {
+    serverNameInput.value = servers.find(s => s.id === activeServerId)?.name || '';
     serverIpInput.value = serverIp;
     serverPortInput.value = serverPort;
     serverPathInput.value = serverPath;
     useHTTPSInput.checked = serverProtocol === 'https';
-
     updateCurrentURL();
+}
 
+addServerButton.onclick = function() {
+    addServer({ name: msg('optionsNewServer') }, function(s) {
+        setActiveServer(s.id, function() {
+            pullStoredData(function() {
+                renderServerList();
+                updateForm();
+                updateLoggedInStatus();
+            });
+        });
+    });
+};
+
+// --- Hoster Accounts ---
+
+let accountsDiv = document.getElementById('accountsDiv');
+let accountPlugin = document.getElementById('accountPlugin');
+let accountLogin = document.getElementById('accountLogin');
+let accountPassword = document.getElementById('accountPassword');
+let addAccountButton = document.getElementById('addAccountButton');
+let accountFeedback = document.getElementById('accountFeedback');
+let accountSuccess = document.getElementById('accountSuccess');
+
+function renderAccounts(accounts) {
+    accountsDiv.textContent = '';
+    const entries = [];
+    for (const [plugin, list] of Object.entries(accounts)) {
+        list.forEach(acc => entries.push({ plugin, login: acc.login, valid: acc.valid }));
+    }
+    if (!entries.length) {
+        const empty = document.createElement('div');
+        empty.className = 'text-muted text-center';
+        empty.textContent = msg('optionsNoAccounts');
+        accountsDiv.appendChild(empty);
+        return;
+    }
+    entries.forEach(function(acc) {
+        const row = document.createElement('div');
+        row.className = 'd-flex align-items-center gap-2 mb-1';
+
+        const badge = document.createElement('span');
+        badge.className = `badge ${acc.valid ? 'bg-success' : 'bg-danger'}`;
+        badge.textContent = acc.valid ? msg('optionsValid') : msg('optionsInvalid');
+
+        const label = document.createElement('span');
+        label.className = 'flex-grow-1';
+        label.textContent = `${acc.plugin} — ${acc.login}`;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
+        removeBtn.textContent = msg('optionsRemove');
+        removeBtn.onclick = function() {
+            removeBtn.disabled = true;
+            removeAccount(acc.plugin, acc.login, function() { loadAccounts(); });
+        };
+
+        row.appendChild(badge);
+        row.appendChild(label);
+        row.appendChild(removeBtn);
+        accountsDiv.appendChild(row);
+    });
+}
+
+function loadAccounts() {
+    accountsDiv.innerHTML = '<div class="text-muted text-center">Loading…</div>';
+    getAccounts(function(accounts) { renderAccounts(accounts); });
+}
+
+addAccountButton.onclick = function() {
+    const plugin = accountPlugin.value.trim();
+    const login = accountLogin.value.trim();
+    const password = accountPassword.value;
+    accountFeedback.hidden = true;
+    accountSuccess.hidden = true;
+    if (!plugin || !login || !password) {
+        accountFeedback.textContent = msg('optionsAllFieldsRequired');
+        accountFeedback.hidden = false;
+        return;
+    }
+    addAccountButton.disabled = true;
+    updateAccount(plugin, login, password, function(ok) {
+        addAccountButton.disabled = false;
+        if (ok) {
+            accountPlugin.value = '';
+            accountLogin.value = '';
+            accountPassword.value = '';
+            accountSuccess.textContent = msg('optionsAccountAdded');
+            accountSuccess.hidden = false;
+            loadAccounts();
+        } else {
+            accountFeedback.textContent = msg('optionsAccountFailed');
+            accountFeedback.hidden = false;
+        }
+    });
+};
+
+// --- Log Viewer ---
+
+let loadLogButton = document.getElementById('loadLogButton');
+let logOutput = document.getElementById('logOutput');
+
+loadLogButton.onclick = function() {
+    loadLogButton.disabled = true;
+    getLog(0, function(lines) {
+        loadLogButton.disabled = false;
+        if (!lines || !lines.length) {
+            logOutput.textContent = msg('optionsLogEmpty');
+        } else {
+            logOutput.textContent = lines.join('\n');
+        }
+        logOutput.hidden = false;
+        logOutput.scrollTop = logOutput.scrollHeight;
+    });
+};
+
+loadLoginRateLimit();
+pullStoredData(function() {
+    applyI18n();
+    renderServerList();
+    updateForm();
+
+    serverNameInput.oninput = requireSaving;
     serverIpInput.oninput = requireSaving;
     serverPortInput.oninput = requireSaving;
     useHTTPSInput.oninput = requireSaving;
