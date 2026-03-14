@@ -180,7 +180,8 @@ export async function checkURL(url, callback) {
 export async function stopDownload(fid, callback) {
     apiFetch(`/api/stopDownloads?fids=[${fid}]`,
         res => callback(res.ok),
-        () => callback(false)
+        () => callback(false),
+        'POST'
     );
 }
 
@@ -194,7 +195,8 @@ export async function restartFile(fid, callback) {
 export async function deletePackage(pid, callback) {
     apiFetch(`/api/deletePackages?pids=[${pid}]`,
         res => callback(res.ok),
-        () => callback(false)
+        () => callback(false),
+        'POST'
     );
 }
 
