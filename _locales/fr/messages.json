@@ -3,17 +3,17 @@
     "message": "Yape"
   },
   "extensionDescription": {
-    "message": "Extension pour PyLoad : surveiller et ajouter des telechargements"
+    "message": "Extension pour PyLoad : surveiller et ajouter des t\u00e9l\u00e9chargements"
   },
 
   "popupCurrentDownloads": {
-    "message": "Telechargements en cours"
+    "message": "T\u00e9l\u00e9chargements en cours"
   },
   "popupFilter": {
     "message": "Filtrer..."
   },
   "popupNoActiveDownloads": {
-    "message": "Aucun telechargement actif"
+    "message": "Aucun t\u00e9l\u00e9chargement actif"
   },
   "popupQueueEmpty": {
     "message": "La file est vide"
@@ -22,7 +22,7 @@
     "message": "Le collecteur est vide"
   },
   "popupDownloads": {
-    "message": "Telechargements"
+    "message": "T\u00e9l\u00e9chargements"
   },
   "popupQueue": {
     "message": "File"
@@ -34,10 +34,10 @@
     "message": "Tout stopper"
   },
   "popupRetryFailed": {
-    "message": "Relancer les echecs"
+    "message": "Relancer les \u00e9checs"
   },
   "popupClearFinished": {
-    "message": "Supprimer termines"
+    "message": "Supprimer termin\u00e9s"
   },
   "popupAddUrls": {
     "message": "Ajouter des URLs"
@@ -49,52 +49,52 @@
     "message": "Tout ajouter"
   },
   "popupPageDownload": {
-    "message": "Telechargement de page"
+    "message": "T\u00e9l\u00e9chargement de page"
   },
   "popupStartDownload": {
-    "message": "Lancer le telechargement"
+    "message": "Lancer le t\u00e9l\u00e9chargement"
   },
   "popupCaptchaRequired": {
-    "message": "Captcha requis —"
+    "message": "Captcha requis \u2014"
   },
   "popupOpenPyload": {
     "message": "ouvrir PyLoad"
   },
   "popupTypeAnswer": {
-    "message": "Entrer la reponse..."
+    "message": "Entrer la r\u00e9ponse..."
   },
   "popupFreeSpace": {
     "message": "Espace libre : $1"
   },
   "popupDownloadAdded": {
-    "message": "Telechargement ajoute"
+    "message": "T\u00e9l\u00e9chargement ajout\u00e9"
   },
   "popupDownloadError": {
     "message": "Erreur : $1"
   },
   "popupAlreadyInQueue": {
-    "message": "Deja dans la file"
+    "message": "D\u00e9j\u00e0 dans la file"
   },
   "popupNotLoggedIn": {
-    "message": "Non connecte"
+    "message": "Non connect\u00e9"
   },
   "popupGoToOptions": {
-    "message": "Ouvrir les parametres"
+    "message": "Ouvrir les param\u00e8tres"
   },
   "popupUrlsAdded": {
-    "message": "$1 URL(s) ajoutee(s)"
+    "message": "$1 URL(s) ajout\u00e9e(s)"
   },
   "popupUrlsFailed": {
-    "message": "$1 URL(s) en echec"
+    "message": "$1 URL(s) en \u00e9chec"
   },
   "popupFailedRestarted": {
-    "message": "Telechargements echoues relances"
+    "message": "T\u00e9l\u00e9chargements \u00e9chou\u00e9s relanc\u00e9s"
   },
   "popupFinishedCleared": {
-    "message": "Telechargements termines supprimes"
+    "message": "T\u00e9l\u00e9chargements termin\u00e9s supprim\u00e9s"
   },
   "popupStats": {
-    "message": "$1 paquets ajoutes"
+    "message": "$1 paquets ajout\u00e9s"
   },
   "popupLink": {
     "message": "$1 lien(s)"
@@ -110,16 +110,16 @@
     "message": "Limite de vitesse"
   },
   "ariaProxy": {
-    "message": "Activer/desactiver le proxy"
+    "message": "Activer/d\u00e9sactiver le proxy"
   },
   "ariaOpenPyload": {
     "message": "Ouvrir PyLoad"
   },
   "ariaSettings": {
-    "message": "Parametres"
+    "message": "Param\u00e8tres"
   },
   "ariaStop": {
-    "message": "Arreter"
+    "message": "Arr\u00eater"
   },
   "ariaRestart": {
     "message": "Relancer"
@@ -134,7 +134,7 @@
     "message": "Descendre"
   },
   "ariaAddToQueue": {
-    "message": "Ajouter a la file"
+    "message": "Ajouter \u00e0 la file"
   },
   "ariaDelete": {
     "message": "Supprimer"
@@ -159,16 +159,16 @@
     "message": "Adresse du serveur PyLoad"
   },
   "optionsHostTooltip": {
-    "message": "Le nom de domaine, l'adresse IP ou le nom d'hote du serveur PyLoad"
+    "message": "Le nom de domaine, l'adresse IP ou le nom d'h\u00f4te du serveur PyLoad"
   },
   "optionsHostFeedback": {
-    "message": "Veuillez fournir un hote valide"
+    "message": "Veuillez fournir un h\u00f4te valide"
   },
   "optionsPort": {
     "message": "Port du serveur PyLoad"
   },
   "optionsPortTooltip": {
-    "message": "Les ports par defaut sont 80 pour HTTP et 443 pour HTTPS"
+    "message": "Les ports par d\u00e9faut sont 80 pour HTTP et 443 pour HTTPS"
   },
   "optionsPortFeedback": {
     "message": "Veuillez fournir un port valide"
@@ -189,10 +189,10 @@
     "message": "Votre URL PyLoad :"
   },
   "optionsLoggedIn": {
-    "message": "Vous etes connecte"
+    "message": "Vous \u00eates connect\u00e9"
   },
   "optionsNotLoggedIn": {
-    "message": "Vous n'etes pas connecte"
+    "message": "Vous n'\u00eates pas connect\u00e9"
   },
   "optionsPleaseLogIn": {
     "message": "Veuillez vous connecter"
@@ -219,22 +219,22 @@
     "message": "Se souvenir des identifiants"
   },
   "optionsRememberWarning": {
-    "message": "Les identifiants seront enregistres sur cet appareil."
+    "message": "Les identifiants seront enregistr\u00e9s sur cet appareil."
   },
   "optionsHttpWarning": {
-    "message": "Attention : HTTP selectionne. Les identifiants seront transmis en clair."
+    "message": "Attention : HTTP s\u00e9lectionn\u00e9. Les identifiants seront transmis en clair."
   },
   "optionsCancel": {
     "message": "Annuler"
   },
   "optionsCheckingStatus": {
-    "message": "Verification du statut..."
+    "message": "V\u00e9rification du statut..."
   },
   "optionsTooManyAttempts": {
-    "message": "Trop de tentatives. Reessayez dans $1s."
+    "message": "Trop de tentatives. R\u00e9essayez dans $1s."
   },
   "optionsNoServers": {
-    "message": "Aucun serveur configure."
+    "message": "Aucun serveur configur\u00e9."
   },
   "optionsActive": {
     "message": "actif"
@@ -253,7 +253,7 @@
   },
 
   "optionsAccounts": {
-    "message": "Comptes hebergeurs"
+    "message": "Comptes h\u00e9bergeurs"
   },
   "optionsAddAccount": {
     "message": "Ajouter un compte"
@@ -265,13 +265,13 @@
     "message": "Ajouter"
   },
   "optionsNoAccounts": {
-    "message": "Aucun compte configure"
+    "message": "Aucun compte configur\u00e9"
   },
   "optionsAccountAdded": {
-    "message": "Compte ajoute"
+    "message": "Compte ajout\u00e9"
   },
   "optionsAccountFailed": {
-    "message": "Echec de l'ajout du compte"
+    "message": "\u00c9chec de l'ajout du compte"
   },
   "optionsAllFieldsRequired": {
     "message": "Tous les champs sont requis"
@@ -306,13 +306,13 @@
     "message": "Importer"
   },
   "popupUploadSuccess": {
-    "message": "Conteneur importe"
+    "message": "Conteneur import\u00e9"
   },
   "popupUploadError": {
-    "message": "Echec de l'import : $1"
+    "message": "\u00c9chec de l'import : $1"
   },
   "popupInvalidFileType": {
-    "message": "Type de fichier invalide. Acceptes : .dlc, .ccf, .rsdf"
+    "message": "Type de fichier invalide. Accept\u00e9s : .dlc, .ccf, .rsdf"
   },
 
   "optionsLoading": {
@@ -338,24 +338,24 @@
   },
 
   "bgDownloadsComplete": {
-    "message": "Tous les telechargements sont termines"
+    "message": "Tous les t\u00e9l\u00e9chargements sont termin\u00e9s"
   },
   "bgInvalidCredentials": {
-    "message": "Identifiants invalides, verifiez que vous etes connecte"
+    "message": "Identifiants invalides, v\u00e9rifiez que vous \u00eates connect\u00e9"
   },
   "bgServerUnreachable": {
     "message": "Serveur injoignable"
   },
   "bgCheckUrlError": {
-    "message": "Erreur de verification : $1"
+    "message": "Erreur de v\u00e9rification : $1"
   },
   "bgDownloadError": {
-    "message": "Erreur de telechargement : $1"
+    "message": "Erreur de t\u00e9l\u00e9chargement : $1"
   },
   "bgDownloadAdded": {
-    "message": "Telechargement ajoute"
+    "message": "T\u00e9l\u00e9chargement ajout\u00e9"
   },
   "bgContextMenu": {
-    "message": "Telecharger avec Yape"
+    "message": "T\u00e9l\u00e9charger avec Yape"
   }
 }
