@@ -201,6 +201,13 @@ export async function deletePackage(pid, callback) {
     );
 }
 
+export async function restartPackage(pid, callback) {
+    apiFetch(`/api/restartPackage?pid=${pid}`,
+        res => callback(res.ok),
+        () => callback(false)
+    );
+}
+
 export async function getCollectorData(callback) {
     apiFetch('/api/getCollectorData',
         async res => { callback(await res.json()); },

@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Yape",
+    "message": "Yapee",
     "description": "Extension name"
   },
   "extensionDescription": {
@@ -203,13 +203,17 @@
     "message": "Add to queue",
     "description": "Collector push button title"
   },
+  "ariaRetryPackage": {
+    "message": "Retry package",
+    "description": "Queue retry button title"
+  },
   "ariaDelete": {
     "message": "Delete",
     "description": "Generic delete button title"
   },
 
   "optionsTitle": {
-    "message": "Yape Options",
+    "message": "Yapee Options",
     "description": "Options page title"
   },
   "optionsServers": {
@@ -506,7 +510,7 @@
     "description": "Context menu success"
   },
   "bgContextMenu": {
-    "message": "Download with Yape",
+    "message": "Download with Yapee",
     "description": "Context menu item label"
   }
 }

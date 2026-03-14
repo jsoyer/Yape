@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Yape — Send to PyLoad
+// @name         Yapee — Send to PyLoad
 // @namespace    https://github.com/jsoyer/Yape
 // @version      1.2.0
 // @description  Adds a "↓ PyLoad" button next to download links on supported hosters

@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Yape"
+    "message": "Yapee"
   },
   "extensionDescription": {
     "message": "Extension pour PyLoad : surveiller et ajouter des t\u00e9l\u00e9chargements"
@@ -46,10 +46,10 @@
     "message": "Une URL par ligne"
   },
   "popupAddAll": {
-    "message": "Ajouter en queue"
+    "message": "Ajouter en file"
   },
   "popupPushAllToQueue": {
-    "message": "Tout mettre en queue"
+    "message": "Tout mettre en file"
   },
   "popupPageDownload": {
     "message": "T\u00e9l\u00e9chargement de page"
@@ -139,12 +139,15 @@
   "ariaAddToQueue": {
     "message": "Ajouter \u00e0 la file"
   },
+  "ariaRetryPackage": {
+    "message": "Relancer le paquet"
+  },
   "ariaDelete": {
     "message": "Supprimer"
   },
 
   "optionsTitle": {
-    "message": "Options de Yape"
+    "message": "Options de Yapee"
   },
   "optionsServers": {
     "message": "Serveurs"
@@ -359,6 +362,6 @@
     "message": "T\u00e9l\u00e9chargement ajout\u00e9"
   },
   "bgContextMenu": {
-    "message": "T\u00e9l\u00e9charger avec Yape"
+    "message": "T\u00e9l\u00e9charger avec Yapee"
   }
 }

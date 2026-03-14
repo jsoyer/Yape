@@ -3,7 +3,7 @@ import {
     isLoggedIn, getStatusDownloads, getLimitSpeedStatus, setLimitSpeedStatus,
     addPackage, checkURL, getQueueData,
     togglePause, freeSpace, deleteFinished, restartFailed, stopAllDownloads,
-    stopDownload, restartFile, deletePackage, getCollectorData, pushToQueue,
+    stopDownload, restartFile, restartPackage, deletePackage, getCollectorData, pushToQueue,
     getProxyStatus, toggleProxy, getServerVersion,
     getEvents, getQueuePackages, orderPackage,
     getCaptchaTask, setCaptchaResult,
@@ -369,6 +369,16 @@ function buildQueueItem(pkg, index, total) {
         orderPackage(pkg.pid, index + 1, function() { updateQueueView(); });
     };
 
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'btn btn-sm btn-outline-warning py-0 px-1';
+    retryBtn.title = msg('ariaRetryPackage');
+    retryBtn.setAttribute('aria-label', msg('ariaRetryPackage'));
+    retryBtn.innerHTML = '<i class="fa fa-redo"></i>';
+    retryBtn.onclick = function() {
+        retryBtn.disabled = true;
+        restartPackage(pkg.pid, function() { updateQueueView(); });
+    };
+
     const delBtn = document.createElement('button');
     delBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
     delBtn.title = msg('ariaDeletePackage');
@@ -383,6 +393,7 @@ function buildQueueItem(pkg, index, total) {
     row.appendChild(countSpan);
     row.appendChild(upBtn);
     row.appendChild(downBtn);
+    row.appendChild(retryBtn);
     row.appendChild(delBtn);
     return row;
 }
@@ -449,7 +460,7 @@ function updateCollectorView() {
             queueBtn.innerHTML = '<i class="fa fa-play"></i>';
             queueBtn.onclick = function() {
                 queueBtn.disabled = true;
-                pushToQueue(pkg.pid, function() { switchTab('downloads'); });
+                pushToQueue(pkg.pid, function() { updateCollectorView(); });
             };
 
             const delBtn = document.createElement('button');
@@ -469,23 +480,25 @@ function updateCollectorView() {
             collectorDiv.appendChild(row);
         });
 
-        const btnRow = document.createElement('div');
-        btnRow.className = 'd-flex justify-content-center gap-2 mt-2';
-        const pushAllBtn = document.createElement('button');
-        pushAllBtn.className = 'btn btn-sm btn-primary';
-        pushAllBtn.textContent = msg('popupPushAllToQueue');
-        pushAllBtn.onclick = function() {
-            pushAllBtn.disabled = true;
-            let done = 0;
-            filtered.forEach(function(pkg) {
-                pushToQueue(pkg.pid, function() {
-                    done++;
-                    if (done === filtered.length) switchTab('downloads');
+        if (filtered.length > 1) {
+            const btnRow = document.createElement('div');
+            btnRow.className = 'd-flex justify-content-center mt-2';
+            const pushAllBtn = document.createElement('button');
+            pushAllBtn.className = 'btn btn-sm btn-primary';
+            pushAllBtn.textContent = msg('popupPushAllToQueue');
+            pushAllBtn.onclick = function() {
+                pushAllBtn.disabled = true;
+                let done = 0;
+                filtered.forEach(function(pkg) {
+                    pushToQueue(pkg.pid, function() {
+                        done++;
+                        if (done === filtered.length) switchTab('downloads');
+                    });
                 });
-            });
-        };
-        btnRow.appendChild(pushAllBtn);
-        collectorDiv.appendChild(btnRow);
+            };
+            btnRow.appendChild(pushAllBtn);
+            collectorDiv.appendChild(btnRow);
+        }
     });
 }
 

@@ -14,7 +14,7 @@ function nameFromUrl(url) {
 const notify = function(title, message) {
     return chrome.notifications.create('', {
         type: 'basic',
-        title: title || 'Yape',
+        title: title || 'Yapee',
         message: message || '',
         iconUrl: './images/icon.png',
     });
@@ -28,8 +28,8 @@ async function downloadLink(info, tab) {
         const statusJson = await statusRes.json();
         clearTimeout(timeoutId);
         if (Object.hasOwn(statusJson, 'error')) {
-            if (statusJson.error === 'Forbidden') notify('Yape', chrome.i18n.getMessage('bgInvalidCredentials'));
-            else notify('Yape', chrome.i18n.getMessage('bgServerUnreachable'));
+            if (statusJson.error === 'Forbidden') notify('Yapee', chrome.i18n.getMessage('bgInvalidCredentials'));
+            else notify('Yapee', chrome.i18n.getMessage('bgServerUnreachable'));
             return;
         }
         const checkRes = await fetch(`${origin}/api/checkURLs?urls=["${encodeURIComponent(info.linkUrl)}"]`, {
@@ -40,7 +40,7 @@ async function downloadLink(info, tab) {
         });
         const checkJson = await checkRes.json();
         if (Object.hasOwn(checkJson, 'error')) {
-            notify('Yape', chrome.i18n.getMessage('bgCheckUrlError', [checkJson.error || 'unknown error']));
+            notify('Yapee', chrome.i18n.getMessage('bgCheckUrlError', [checkJson.error || 'unknown error']));
             return;
         }
         const safeName = nameFromUrl(info.linkUrl).replace(/[^a-z0-9._\-]/gi, '_');
@@ -52,14 +52,14 @@ async function downloadLink(info, tab) {
         });
         const addJson = await addRes.json();
         if (Object.hasOwn(addJson, 'error')) {
-            notify('Yape', chrome.i18n.getMessage('bgDownloadError', [addJson.error || 'unknown error']));
+            notify('Yapee', chrome.i18n.getMessage('bgDownloadError', [addJson.error || 'unknown error']));
             return;
         }
         incrementStat('packagesAdded');
-        notify('Yape', chrome.i18n.getMessage('bgDownloadAdded'));
+        notify('Yapee', chrome.i18n.getMessage('bgDownloadAdded'));
     } catch (e) {
         clearTimeout(timeoutId);
-        notify('Yape', chrome.i18n.getMessage('bgServerUnreachable'));
+        notify('Yapee', chrome.i18n.getMessage('bgServerUnreachable'));
     }
 }
 
@@ -113,7 +113,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
                 const lastCount = data.lastDownloadCount || 0;
                 const currentCount = downloads.length;
                 if (lastCount > 0 && currentCount === 0) {
-                    notify('Yape', chrome.i18n.getMessage('bgDownloadsComplete'));
+                    notify('Yapee', chrome.i18n.getMessage('bgDownloadsComplete'));
                 }
                 chrome.storage.session.set({ lastDownloadCount: currentCount });
             });
