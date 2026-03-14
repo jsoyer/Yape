@@ -114,7 +114,8 @@ export async function addPackage(name, url, callback) {
                 callback(true);
             }
         },
-        () => callback(false, 'Invalid server response')
+        () => callback(false, 'Invalid server response'),
+        'POST'
     );
 }
 
@@ -305,16 +306,35 @@ export async function getLog(offset, callback) {
 }
 
 export async function uploadContainer(file, callback) {
+    // PyLoad 0.5.0's /api/uploadContainer has a Python 3 bytes/str bug.
+    // Use the web UI's /json/add_package with CSRF token instead.
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
     try {
-        const data = await file.arrayBuffer();
-        const res = await fetch(`${origin}/json/upload_container/${encodeURIComponent(file.name)}`, {
-            method: 'POST',
-            headers: { ...getAuthHeaders(), 'Content-Type': 'application/octet-stream' },
-            body: data,
+        const pageRes = await fetch(`${origin}/`, {
+            headers: getAuthHeaders(),
             signal: controller.signal,
-            credentials: 'omit'
+            credentials: 'include'
+        });
+        const html = await pageRes.text();
+        const match = html.match(/<meta\s+name="csrf-token"\s+content="([^"]+)"/);
+        if (!match) {
+            clearTimeout(timeoutId);
+            callback(false, 'CSRF token not found');
+            return;
+        }
+        const formData = new FormData();
+        formData.append('add_name', file.name.replace(/\.[^.]+$/, ''));
+        formData.append('add_file', file, file.name);
+        formData.append('add_dest', '1');
+        formData.append('add_links', '');
+        formData.append('add_password', '');
+        const res = await fetch(`${origin}/json/add_package`, {
+            method: 'POST',
+            headers: { ...getAuthHeaders(), 'X-CSRFToken': match[1] },
+            body: formData,
+            signal: controller.signal,
+            credentials: 'include'
         });
         clearTimeout(timeoutId);
         if (res.ok) {

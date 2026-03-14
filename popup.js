@@ -469,6 +469,8 @@ function switchTab(tab) {
     activeView = tab;
     clearTimeout(pollTimeout);
     pollTimeout = null;
+    setErrorMessage('');
+    setSuccessMessage('');
 
     downloadsTab.className = tab === 'downloads' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-secondary';
     queueTab.className = tab === 'queue' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-secondary';
