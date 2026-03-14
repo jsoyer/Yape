@@ -200,8 +200,7 @@ saveButton.onclick = function(ev) {
 };
 
 loginButton.onclick = function(ev) {
-    rememberCredentials.checked = false;
-    rememberWarning.hidden = true;
+    rememberWarning.hidden = !rememberCredentials.checked;
     loginModalInstance = new bootstrap.Modal(document.getElementById('loginModal'));
     loginModalInstance.show();
 }

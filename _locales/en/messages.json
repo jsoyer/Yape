@@ -107,8 +107,12 @@
     "description": "Shown when URL is already queued"
   },
   "popupNotLoggedIn": {
-    "message": "You are not logged in, please go to the extension's option page",
+    "message": "Not connected",
     "description": "Login error in popup"
+  },
+  "popupGoToOptions": {
+    "message": "Open settings",
+    "description": "Button to open options page from popup"
   },
   "popupUrlsAdded": {
     "message": "$1 URL(s) added",

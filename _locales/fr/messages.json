@@ -76,7 +76,10 @@
     "message": "Deja dans la file"
   },
   "popupNotLoggedIn": {
-    "message": "Non connecte, allez dans les options de l'extension"
+    "message": "Non connecte"
+  },
+  "popupGoToOptions": {
+    "message": "Ouvrir les parametres"
   },
   "popupUrlsAdded": {
     "message": "$1 URL(s) ajoutee(s)"

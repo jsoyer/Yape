@@ -669,8 +669,19 @@ pullStoredData(function() {
 
     isLoggedIn(function(loggedIn, unauthorized, error, response) {
         if (!loggedIn) {
-            setErrorMessage(msg('popupNotLoggedIn'));
             statusDiv.textContent = '';
+            const wrapper = document.createElement('div');
+            wrapper.className = 'text-center m-3';
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'text-muted mb-2';
+            msgDiv.textContent = error || msg('popupNotLoggedIn');
+            wrapper.appendChild(msgDiv);
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-sm btn-primary';
+            btn.textContent = msg('popupGoToOptions');
+            btn.onclick = () => chrome.runtime.openOptionsPage();
+            wrapper.appendChild(btn);
+            statusDiv.appendChild(wrapper);
             return;
         }
 
