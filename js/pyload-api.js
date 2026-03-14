@@ -308,14 +308,11 @@ export async function uploadContainer(file, callback) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
     try {
-        const content = await file.text();
-        const params = new URLSearchParams();
-        params.set('filename', file.name);
-        params.set('data', content);
-        const res = await fetch(`${origin}/api/uploadContainer`, {
+        const data = await file.arrayBuffer();
+        const res = await fetch(`${origin}/json/upload_container/${encodeURIComponent(file.name)}`, {
             method: 'POST',
-            headers: { ...getAuthHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: params.toString(),
+            headers: { ...getAuthHeaders(), 'Content-Type': 'application/octet-stream' },
+            body: data,
             signal: controller.signal,
             credentials: 'omit'
         });
