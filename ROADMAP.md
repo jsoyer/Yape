@@ -20,11 +20,11 @@ Features identified via PyLoad 0.5.0 API analysis and code quality audit (v2.1.0
 - **v3.4.0** — Enhanced notifications: per-package completion alerts, error/failure desktop notifications, captcha pending desktop alert, progress bar notification (`type: 'progress'`) for active downloads
 - **v3.5.0** — Chrome Side Panel + Firefox Sidebar (reuses popup.html), batch operations (multi-select delete in queue), click-to-rename packages, add links to existing packages, hoster link extractor (context menu + `chrome.scripting`)
 
+- **v3.6.0** — Analytics & Intelligence: download history (last 1000, circular buffer), mini-stats dashboard (per-hoster breakdown, peak speed, failure rate), smart retry with exponential backoff (5 attempts, configurable), advanced status filter in downloads view, History tab in popup
+
 ---
 
 ## Backlog
-
-- **Analytics & Intelligence** — Download history (last 1000), mini-stats dashboard (per-hoster breakdown, avg speed, failure rate), smart retry with exponential backoff, advanced filters (by status, hoster, size)
 - **Multi-server (Option B)** — Afficher les downloads des deux instances simultanément dans le popup. Necessite de passer `origin` en parametre dans toute la chaine API, N event loops en parallele, et merger les resultats dans l'UI avec badge par serveur.
 
 ---

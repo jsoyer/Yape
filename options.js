@@ -1,4 +1,4 @@
-import { pullStoredData, setOrigin, origin, serverIp, serverPort, serverProtocol, serverPath, servers, activeServerId, addServer, removeServer, setActiveServer } from './js/storage.js';
+import { pullStoredData, setOrigin, origin, serverIp, serverPort, serverProtocol, serverPath, servers, activeServerId, addServer, removeServer, setActiveServer, isAutoRetryEnabled, setAutoRetryEnabled } from './js/storage.js';
 import { login, isLoggedIn, abortServerStatus, getAccounts, updateAccount, removeAccount, getLog } from './js/pyload-api.js';
 import { applyI18n, msg } from './js/i18n.js';
 
@@ -434,6 +434,11 @@ loadLogButton.onclick = function() {
     });
 };
 
+let autoRetryToggle = document.getElementById('autoRetryToggle');
+autoRetryToggle.onchange = function() {
+    setAutoRetryEnabled(autoRetryToggle.checked);
+};
+
 loadLoginRateLimit();
 pullStoredData(function() {
     applyI18n();
@@ -445,6 +450,10 @@ pullStoredData(function() {
     serverPortInput.oninput = requireSaving;
     useHTTPSInput.oninput = requireSaving;
     serverPathInput.oninput = requireSaving;
+
+    isAutoRetryEnabled(function(enabled) {
+        autoRetryToggle.checked = enabled;
+    });
 
     updateLoggedInStatus(function() {
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));

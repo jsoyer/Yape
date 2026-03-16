@@ -43,9 +43,19 @@
     <button id="downloadsTab" class="btn btn-sm btn-primary" data-i18n="popupDownloads">Downloads</button>
     <button id="queueTab" class="btn btn-sm btn-outline-secondary" data-i18n="popupQueue">Queue</button>
     <button id="collectorTab" class="btn btn-sm btn-outline-secondary" data-i18n="popupCollector">Collector</button>
+    <button id="historyTab" class="btn btn-sm btn-outline-secondary" data-i18n="popupHistory">History</button>
   </div>
 
-  <input type="text" id="searchInput" class="form-control form-control-sm mb-2" data-i18n-placeholder="popupFilter" placeholder="Filter..." hidden>
+  <div id="filterBar" class="d-flex gap-1 mb-2 align-items-center" style="font-size: small" hidden>
+    <input type="text" id="searchInput" class="form-control form-control-sm flex-grow-1" data-i18n-placeholder="popupFilter" placeholder="Filter...">
+    <select id="statusFilter" class="form-select form-select-sm" style="width: auto; font-size: 11px">
+      <option value="" data-i18n="popupFilterAll">All statuses</option>
+      <option value="downloading">Downloading</option>
+      <option value="failed">Failed</option>
+      <option value="offline">Offline</option>
+      <option value="waiting">Waiting</option>
+    </select>
+  </div>
 
   <div id="captchaAlert" class="mb-2" hidden>
     <div class="alert alert-warning py-2 small mb-1">
@@ -74,10 +84,18 @@
   </div>
   <div id="queueDiv" hidden></div>
   <div id="collectorDiv" hidden></div>
+  <div id="historyDiv" hidden></div>
 
   <div id="freeSpaceDiv" class="text-center text-muted small mt-1" hidden></div>
   <div id="serverVersionDiv" class="text-center text-muted small" hidden></div>
   <div id="statsDiv" class="text-center text-muted small" hidden></div>
+  <div id="statsDashboard" class="small mt-1" hidden>
+    <div id="statsSummary" class="text-center text-muted"></div>
+    <div id="statsHosterTable" class="mt-1"></div>
+    <div class="text-center mt-1">
+      <button id="clearHistoryBtn" class="btn btn-sm btn-outline-secondary" data-i18n="popupClearHistory">Clear history</button>
+    </div>
+  </div>
 
   <div id="actionButtons" class="d-flex justify-content-center gap-2 mt-2" hidden>
     <button id="stopAllButton" class="btn btn-sm btn-outline-danger">
