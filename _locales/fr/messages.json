@@ -424,5 +424,42 @@
   },
   "bgNoLinksFound": {
     "message": "Aucun lien h\u00e9bergeur trouv\u00e9 sur cette page"
+  },
+
+  "popupHistory": {
+    "message": "Historique"
+  },
+  "popupHistoryEmpty": {
+    "message": "Aucun historique"
+  },
+  "popupHistoryCompleted": {
+    "message": "Termin\u00e9"
+  },
+  "popupHistoryFailed": {
+    "message": "\u00c9chou\u00e9"
+  },
+  "popupClearHistory": {
+    "message": "Effacer l'historique"
+  },
+  "popupFilterAll": {
+    "message": "Tous les statuts"
+  },
+  "popupStatsTotal": {
+    "message": "$1 t\u00e9l\u00e9chargements, $2 \u00e9chou\u00e9s"
+  },
+  "popupStatsRate": {
+    "message": "$1% de r\u00e9ussite"
+  },
+  "popupStatsPeakSpeed": {
+    "message": "Pic : $1"
+  },
+  "optionsAutoRetry": {
+    "message": "Relancer auto les \u00e9checs"
+  },
+  "optionsAutoRetryDesc": {
+    "message": "Relancer jusqu'\u00e0 5 fois avec d\u00e9lai progressif"
+  },
+  "bgAutoRetried": {
+    "message": "Relance auto : $1"
   }
 }

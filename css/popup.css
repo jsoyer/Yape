@@ -64,3 +64,14 @@ body {
 .queue-name:hover .edit-hint {
     opacity: 0.4;
 }
+
+/* History status badges */
+#historyDiv .badge {
+    font-size: 10px;
+    font-weight: 500;
+}
+
+/* Stats dashboard hoster table */
+#statsHosterTable .table {
+    margin-bottom: 0;
+}

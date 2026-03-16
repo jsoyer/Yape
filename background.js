@@ -1,5 +1,5 @@
-import { pullStoredData, origin, getAuthHeaders, incrementStat } from './js/storage.js';
-import { addPackage, getStatusDownloads, isCaptchaWaiting, deleteFinished, togglePause } from './js/pyload-api.js';
+import { pullStoredData, origin, getAuthHeaders, incrementStat, addHistoryEntries, batchUpdateStats, getRetryQueue, setRetryQueue, isAutoRetryEnabled } from './js/storage.js';
+import { addPackage, getStatusDownloads, isCaptchaWaiting, deleteFinished, togglePause, restartFile } from './js/pyload-api.js';
 
 function nameFromUrl(url) {
     try {
@@ -61,6 +61,15 @@ async function downloadLink(info, tab) {
     } catch (e) {
         clearTimeout(timeoutId);
         notify('Yapee', chrome.i18n.getMessage('bgServerUnreachable'));
+    }
+}
+
+function extractHoster(url) {
+    if (!url) return 'unknown';
+    try {
+        return new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+        return 'unknown';
     }
 }
 
@@ -166,23 +175,24 @@ chrome.alarms.onAlarm.addListener((alarm) => {
         getStatusDownloads((downloads) => {
             const currentCount = downloads.length;
 
-            // Build current packages map: { pid: { name, percent, speed } }
+            // Build current packages map: { pid: { name, percent, speed, url } }
             const currentPackages = {};
             downloads.forEach(d => {
                 if (!currentPackages[d.packageID]) {
-                    currentPackages[d.packageID] = { name: d.name, percent: 0, speed: 0 };
+                    currentPackages[d.packageID] = { name: d.name, percent: 0, speed: 0, url: d.url || '' };
                 }
                 const pkg = currentPackages[d.packageID];
                 pkg.percent = Math.max(pkg.percent, parseFloat(d.percent) || 0);
                 pkg.speed = Math.max(pkg.speed, d.speed || 0);
+                if (!pkg.url && d.url) pkg.url = d.url;
             });
 
-            // Collect fids with error status
+            // Collect fids with error status: { fid: { name, url } }
             const errorFids = {};
             downloads.forEach(d => {
                 const s = (d.statusmsg || '').toLowerCase();
                 if (s === 'failed' || s === 'aborted' || s === 'offline') {
-                    errorFids[d.fid] = d.name;
+                    errorFids[d.fid] = { name: d.name, url: d.url || '' };
                 }
             });
 
@@ -194,12 +204,30 @@ chrome.alarms.onAlarm.addListener((alarm) => {
                     const lastCaptcha = data.lastCaptchaState || false;
                     const notifiedErrors = new Set(data.notifiedErrors || []);
 
-                    // Feature 1: Per-package completion
+                    // Collect batched analytics data
+                    const historyBatch = [];
+                    const statIncrements = {};
+                    const hosterUpdates = [];
+                    let peakSpeed = 0;
+
+                    // Feature 1: Per-package completion + history tracking
                     for (const pid of Object.keys(lastPackages)) {
                         if (!currentPackages[pid]) {
-                            notify('Yapee', chrome.i18n.getMessage('bgPackageComplete', [lastPackages[pid].name]), {
+                            const pkg = lastPackages[pid];
+                            const hoster = extractHoster(pkg.url);
+                            notify('Yapee', chrome.i18n.getMessage('bgPackageComplete', [pkg.name]), {
                                 id: `complete-${pid}`
                             });
+                            historyBatch.push({
+                                timestamp: Date.now(),
+                                name: pkg.name,
+                                packageID: pid,
+                                status: 'completed',
+                                speed: pkg.speed,
+                                hoster
+                            });
+                            statIncrements.totalDownloads = (statIncrements.totalDownloads || 0) + 1;
+                            hosterUpdates.push({ hoster, success: true });
                         }
                     }
 
@@ -211,13 +239,23 @@ chrome.alarms.onAlarm.addListener((alarm) => {
                         });
                     }
 
-                    // Feature 2: Error notifications
-                    for (const [fid, name] of Object.entries(errorFids)) {
+                    // Feature 2: Error notifications + history tracking
+                    for (const [fid, info] of Object.entries(errorFids)) {
                         if (!notifiedErrors.has(fid)) {
                             notifiedErrors.add(fid);
-                            notify('Yapee', chrome.i18n.getMessage('bgDownloadFailed', [name]), {
+                            const hoster = extractHoster(info.url);
+                            notify('Yapee', chrome.i18n.getMessage('bgDownloadFailed', [info.name]), {
                                 id: `error-${fid}`
                             });
+                            historyBatch.push({
+                                timestamp: Date.now(),
+                                name: info.name,
+                                fid,
+                                status: 'failed',
+                                hoster
+                            });
+                            statIncrements.totalFailures = (statIncrements.totalFailures || 0) + 1;
+                            hosterUpdates.push({ hoster, success: false });
                         }
                     }
                     // Prune notifiedErrors: remove fids no longer in active downloads
@@ -225,6 +263,47 @@ chrome.alarms.onAlarm.addListener((alarm) => {
                     for (const fid of notifiedErrors) {
                         if (!activeFids.has(String(fid))) notifiedErrors.delete(fid);
                     }
+
+                    // Track peak speed
+                    downloads.forEach(d => {
+                        if (d.speed > peakSpeed) peakSpeed = d.speed;
+                    });
+
+                    // Single batched write for history + stats (no race conditions)
+                    addHistoryEntries(historyBatch);
+                    if (Object.keys(statIncrements).length > 0 || hosterUpdates.length > 0 || peakSpeed > 0) {
+                        batchUpdateStats(statIncrements, hosterUpdates, peakSpeed);
+                    }
+
+                    // Smart retry: auto-retry failed downloads with exponential backoff
+                    isAutoRetryEnabled((retryEnabled) => {
+                        if (!retryEnabled) return;
+                        getRetryQueue((retryQueue) => {
+                            let changed = false;
+                            for (const [fid, info] of Object.entries(errorFids)) {
+                                const entry = retryQueue[fid] || { attempts: 0, nextRetry: 0, backoffMs: 60000, name: info.name };
+                                if (entry.attempts >= 5) continue;
+                                if (Date.now() < entry.nextRetry) continue;
+                                restartFile(parseInt(fid, 10), () => {});
+                                entry.attempts++;
+                                entry.backoffMs = Math.min(entry.backoffMs * 2, 3600000);
+                                entry.nextRetry = Date.now() + entry.backoffMs;
+                                entry.name = info.name;
+                                retryQueue[fid] = entry;
+                                changed = true;
+                                notify('Yapee', chrome.i18n.getMessage('bgAutoRetried', [info.name]), {
+                                    id: `retry-${fid}`
+                                });
+                            }
+                            for (const fid of Object.keys(retryQueue)) {
+                                if (!activeFids.has(fid)) {
+                                    delete retryQueue[fid];
+                                    changed = true;
+                                }
+                            }
+                            if (changed) setRetryQueue(retryQueue);
+                        });
+                    });
 
                     // Feature 3: Captcha notification + Badge
                     isCaptchaWaiting((hasCaptcha) => {

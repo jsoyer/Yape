@@ -1,4 +1,4 @@
-import { pullStoredData, origin, servers, activeServerId, setActiveServer, getStats, incrementStat } from './js/storage.js';
+import { pullStoredData, origin, servers, activeServerId, setActiveServer, getStats, incrementStat, getHistory, clearHistory } from './js/storage.js';
 import {
     isLoggedIn, getStatusDownloads, getLimitSpeedStatus, setLimitSpeedStatus, getMaxSpeed, setMaxSpeed,
     addPackage, checkURL, getQueueData,
@@ -71,6 +71,14 @@ let selectAllQueue = document.getElementById('selectAllQueue');
 let batchCount = document.getElementById('batchCount');
 let batchDeleteBtn = document.getElementById('batchDeleteBtn');
 let existingPackageSelect = document.getElementById('existingPackageSelect');
+let historyTab = document.getElementById('historyTab');
+let historyDiv = document.getElementById('historyDiv');
+let statusFilter = document.getElementById('statusFilter');
+let filterBar = document.getElementById('filterBar');
+let statsDashboard = document.getElementById('statsDashboard');
+let statsSummary = document.getElementById('statsSummary');
+let statsHosterTable = document.getElementById('statsHosterTable');
+let clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
 let limitSpeedStatus = true;
 let proxyStatus = false;
@@ -81,6 +89,7 @@ let currentCaptchaTask = null;
 let searchTerm = '';
 let dragSrcIndex = null;
 let selectedPids = new Set();
+let statusFilterValue = '';
 const eventUuid = crypto.randomUUID();
 
 function formatBytes(bytes) {
@@ -179,8 +188,11 @@ function updateServerVersion() {
 
 function updateStats() {
     getStats(function(stats) {
-        if (!stats.packagesAdded) return;
-        statsDiv.textContent = msg('popupStats', [String(stats.packagesAdded)]);
+        if (!stats.packagesAdded && !stats.totalDownloads) return;
+        const parts = [];
+        if (stats.packagesAdded) parts.push(msg('popupStats', [String(stats.packagesAdded)]));
+        if (stats.totalDownloads) parts.push(msg('popupStatsTotal', [String(stats.totalDownloads), String(stats.totalFailures || 0)]));
+        statsDiv.textContent = parts.join(' | ');
         statsDiv.hidden = false;
     });
 }
@@ -194,8 +206,14 @@ searchInput.oninput = function() {
         searchTerm = searchInput.value.toLowerCase();
         if (activeView === 'downloads') updateStatusDownloads();
         else if (activeView === 'queue') updateQueueView();
-        else updateCollectorView();
+        else if (activeView === 'collector') updateCollectorView();
+        else if (activeView === 'history') updateHistoryView();
     }, 300);
+};
+
+statusFilter.onchange = function() {
+    statusFilterValue = statusFilter.value;
+    if (activeView === 'downloads') updateStatusDownloads();
 };
 
 // --- Event-driven polling ---
@@ -312,9 +330,12 @@ function updateStatusDownloads() {
         let totalSpeed = 0;
         statusDiv.textContent = '';
 
-        const filtered = searchTerm
+        let filtered = searchTerm
             ? status.filter(d => d.name.toLowerCase().includes(searchTerm))
             : status;
+        if (statusFilterValue) {
+            filtered = filtered.filter(d => (d.statusmsg || '').toLowerCase() === statusFilterValue);
+        }
 
         if (filtered.length === 0) {
             const empty = document.createElement('div');
@@ -647,6 +668,111 @@ function updateCollectorView() {
     });
 }
 
+// --- History view ---
+
+function updateHistoryView() {
+    getHistory(function(entries) {
+        historyDiv.textContent = '';
+        const reversed = entries.slice().reverse();
+        const filtered = searchTerm
+            ? reversed.filter(e => e.name.toLowerCase().includes(searchTerm))
+            : reversed;
+
+        if (!filtered.length) {
+            const empty = document.createElement('div');
+            empty.className = 'text-center m-4 text-muted';
+            empty.textContent = msg('popupHistoryEmpty');
+            historyDiv.appendChild(empty);
+            return;
+        }
+
+        filtered.slice(0, 100).forEach(function(entry) {
+            const row = document.createElement('div');
+            row.className = 'd-flex align-items-center gap-1';
+            row.style.cssText = 'margin-bottom: 6px; font-size: small';
+
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'ellipsis flex-grow-1';
+            nameDiv.textContent = entry.name;
+
+            const badge = document.createElement('span');
+            badge.className = entry.status === 'completed'
+                ? 'badge bg-success'
+                : 'badge bg-danger';
+            badge.textContent = entry.status === 'completed'
+                ? msg('popupHistoryCompleted')
+                : msg('popupHistoryFailed');
+
+            const speedSpan = document.createElement('span');
+            speedSpan.className = 'text-muted';
+            speedSpan.style.whiteSpace = 'nowrap';
+            if (entry.speedAvg && entry.speedAvg > 0) {
+                speedSpan.textContent = `${(entry.speedAvg / (1000 * 1000)).toFixed(1)} MB/s`;
+            }
+
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'text-muted';
+            timeSpan.style.cssText = 'white-space: nowrap; font-size: 10px';
+            if (entry.timestamp) {
+                const d = new Date(entry.timestamp);
+                timeSpan.textContent = `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+            }
+
+            row.appendChild(nameDiv);
+            row.appendChild(speedSpan);
+            row.appendChild(badge);
+            row.appendChild(timeSpan);
+            historyDiv.appendChild(row);
+        });
+    });
+}
+
+function updateStatsDashboard() {
+    getStats(function(stats) {
+        const total = stats.totalDownloads || 0;
+        const failures = stats.totalFailures || 0;
+        const rate = total > 0 ? Math.round(((total - failures) / total) * 100) : 100;
+        const peak = stats.peakSpeed || 0;
+        const peakStr = peak > 0 ? `${(peak / (1000 * 1000)).toFixed(1)} MB/s` : '-';
+
+        let summary = msg('popupStatsTotal', [String(total), String(failures)]);
+        summary += ` (${msg('popupStatsRate', [String(rate)])})`;
+        summary += ` | ${msg('popupStatsPeakSpeed', [peakStr])}`;
+        statsSummary.textContent = summary;
+
+        const byHoster = stats.byHoster || {};
+        const hosters = Object.entries(byHoster).sort((a, b) => b[1].count - a[1].count);
+        statsHosterTable.textContent = '';
+
+        if (hosters.length > 0) {
+            const table = document.createElement('table');
+            table.className = 'table table-sm table-striped mb-0';
+            table.style.fontSize = '11px';
+            const thead = document.createElement('thead');
+            thead.innerHTML = '<tr><th>Hoster</th><th class="text-end">OK</th><th class="text-end">Fail</th></tr>';
+            table.appendChild(thead);
+            const tbody = document.createElement('tbody');
+            hosters.slice(0, 10).forEach(function([hoster, data]) {
+                const tr = document.createElement('tr');
+                const ok = data.count - data.failures;
+                tr.innerHTML = `<td class="ellipsis" style="max-width:180px">${DOMPurify.sanitize(hoster)}</td><td class="text-end">${ok}</td><td class="text-end">${data.failures}</td>`;
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            statsHosterTable.appendChild(table);
+        }
+
+        statsDashboard.hidden = false;
+    });
+}
+
+clearHistoryBtn.onclick = function() {
+    clearHistory(function() {
+        updateHistoryView();
+        updateStatsDashboard();
+    });
+};
+
 // --- Tab switching ---
 
 function switchTab(tab) {
@@ -659,11 +785,15 @@ function switchTab(tab) {
     downloadsTab.className = tab === 'downloads' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-secondary';
     queueTab.className = tab === 'queue' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-secondary';
     collectorTab.className = tab === 'collector' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-secondary';
+    historyTab.className = tab === 'history' ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-secondary';
 
     statusDiv.hidden = tab !== 'downloads';
     queueDiv.hidden = tab !== 'queue';
     batchBar.hidden = tab !== 'queue';
     collectorDiv.hidden = tab !== 'collector';
+    historyDiv.hidden = tab !== 'history';
+    statsDashboard.hidden = tab !== 'history';
+    statusFilter.hidden = tab !== 'downloads';
     if (tab !== 'queue') { selectedPids.clear(); }
 
     if (tab === 'downloads') {
@@ -672,8 +802,11 @@ function switchTab(tab) {
     } else if (tab === 'queue') {
         updateQueueView();
         startEventLoop();
-    } else {
+    } else if (tab === 'collector') {
         updateCollectorView();
+    } else if (tab === 'history') {
+        updateHistoryView();
+        updateStatsDashboard();
     }
 }
 
@@ -786,6 +919,7 @@ deleteFinishedButton.onclick = function() {
 downloadsTab.onclick = () => switchTab('downloads');
 queueTab.onclick = () => switchTab('queue');
 collectorTab.onclick = () => switchTab('collector');
+historyTab.onclick = () => switchTab('history');
 
 captchaInput.onkeydown = function(e) {
     if (e.key === 'Enter') captchaSubmit.click();
@@ -911,7 +1045,7 @@ pullStoredData(function() {
         viewTabs.hidden = false;
         multiUrlDiv.hidden = false;
         containerUploadDiv.hidden = false;
-        searchInput.hidden = false;
+        filterBar.hidden = false;
 
         if (servers.length > 1) {
             serverSelect.textContent = '';

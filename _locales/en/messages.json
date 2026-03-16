@@ -610,5 +610,67 @@
   "bgNoLinksFound": {
     "message": "No hoster links found on this page",
     "description": "Notification when no links found"
+  },
+
+  "popupHistory": {
+    "message": "History",
+    "description": "History tab label"
+  },
+  "popupHistoryEmpty": {
+    "message": "No download history yet",
+    "description": "Empty history view"
+  },
+  "popupHistoryCompleted": {
+    "message": "Completed",
+    "description": "History status badge"
+  },
+  "popupHistoryFailed": {
+    "message": "Failed",
+    "description": "History status badge"
+  },
+  "popupClearHistory": {
+    "message": "Clear history",
+    "description": "Clear history button"
+  },
+  "popupFilterAll": {
+    "message": "All statuses",
+    "description": "Status filter default option"
+  },
+  "popupStatsTotal": {
+    "message": "$1 downloads, $2 failed",
+    "description": "Stats summary",
+    "placeholders": {
+      "1": { "content": "$1", "example": "42" },
+      "2": { "content": "$2", "example": "3" }
+    }
+  },
+  "popupStatsRate": {
+    "message": "$1% success",
+    "description": "Stats success rate",
+    "placeholders": {
+      "1": { "content": "$1", "example": "93" }
+    }
+  },
+  "popupStatsPeakSpeed": {
+    "message": "Peak: $1",
+    "description": "Stats peak speed",
+    "placeholders": {
+      "1": { "content": "$1", "example": "12.5 MB/s" }
+    }
+  },
+  "optionsAutoRetry": {
+    "message": "Auto-retry failed downloads",
+    "description": "Auto-retry toggle label"
+  },
+  "optionsAutoRetryDesc": {
+    "message": "Retry up to 5 times with exponential backoff",
+    "description": "Auto-retry description"
+  },
+  "bgAutoRetried": {
+    "message": "Auto-retried: $1",
+    "description": "Notification when auto-retry fires",
+    "placeholders": {
+      "1": { "content": "$1", "example": "file.zip" }
+    }
   }
 }

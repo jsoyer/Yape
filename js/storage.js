@@ -218,3 +218,76 @@ export function getStats(callback) {
         callback(data.downloadStats || {});
     });
 }
+
+// --- Analytics: Download History (circular buffer, max 1000) ---
+
+const HISTORY_MAX = 1000;
+
+export function addHistoryEntries(entries, callback) {
+    if (!entries.length) { if (callback) callback(); return; }
+    chrome.storage.local.get(['downloadHistory'], function(data) {
+        const history = data.downloadHistory || [];
+        entries.forEach(e => history.push(e));
+        if (history.length > HISTORY_MAX) {
+            history.splice(0, history.length - HISTORY_MAX);
+        }
+        chrome.storage.local.set({ downloadHistory: history }, callback);
+    });
+}
+
+export function getHistory(callback) {
+    chrome.storage.local.get(['downloadHistory'], function(data) {
+        callback(data.downloadHistory || []);
+    });
+}
+
+export function clearHistory(callback) {
+    chrome.storage.local.remove('downloadHistory', callback);
+}
+
+// --- Analytics: Batched Stats Update (single read-modify-write) ---
+
+export function batchUpdateStats(increments, hosterUpdates, peakSpeed, callback) {
+    chrome.storage.local.get(['downloadStats'], function(data) {
+        const stats = data.downloadStats || {};
+        for (const [key, value] of Object.entries(increments)) {
+            stats[key] = (stats[key] || 0) + value;
+        }
+        if (hosterUpdates.length > 0) {
+            const byHoster = stats.byHoster || {};
+            hosterUpdates.forEach(({ hoster, success }) => {
+                const entry = byHoster[hoster] || { count: 0, failures: 0 };
+                entry.count++;
+                if (!success) entry.failures++;
+                byHoster[hoster] = entry;
+            });
+            stats.byHoster = byHoster;
+        }
+        if (peakSpeed > (stats.peakSpeed || 0)) {
+            stats.peakSpeed = peakSpeed;
+        }
+        chrome.storage.local.set({ downloadStats: stats }, callback);
+    });
+}
+
+// --- Analytics: Smart Retry Queue ---
+
+export function getRetryQueue(callback) {
+    chrome.storage.local.get(['retryQueue'], function(data) {
+        callback(data.retryQueue || {});
+    });
+}
+
+export function setRetryQueue(queue, callback) {
+    chrome.storage.local.set({ retryQueue: queue }, callback);
+}
+
+export function isAutoRetryEnabled(callback) {
+    chrome.storage.local.get(['autoRetryEnabled'], function(data) {
+        callback(data.autoRetryEnabled !== false);
+    });
+}
+
+export function setAutoRetryEnabled(enabled, callback) {
+    chrome.storage.local.set({ autoRetryEnabled: enabled }, callback);
+}

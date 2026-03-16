@@ -87,6 +87,13 @@
             <button id="loginButton" class="btn btn-primary m-1" hidden data-i18n="optionsLogin">Login</button>
           </div>
         </div>
+        <div class="border rounded p-3 mt-4">
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="autoRetryToggle" checked>
+            <label class="form-check-label" for="autoRetryToggle" data-i18n="optionsAutoRetry">Auto-retry failed downloads</label>
+          </div>
+          <div class="small text-muted mt-1" data-i18n="optionsAutoRetryDesc">Retry up to 5 times with exponential backoff</div>
+        </div>
       </div>
 
       <div class="tab-pane fade pt-4" id="accountsPane" role="tabpanel">
