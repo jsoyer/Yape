@@ -795,7 +795,7 @@ function switchTab(tab) {
     statsDashboard.hidden = tab !== 'history';
     statusFilter.hidden = tab !== 'downloads';
     actionButtons.hidden = (tab !== 'downloads');
-    multiUrlDiv.hidden = (tab !== 'downloads' && tab !== 'queue' && tab !== 'collector');
+    multiUrlDiv.hidden = (tab !== 'downloads' && tab !== 'collector');
     containerUploadDiv.hidden = (tab !== 'downloads' && tab !== 'collector');
     pageDownloadDiv.hidden = (tab !== 'downloads');
     existingPackageSelect.hidden = (tab === 'collector') || (tab === 'history');
