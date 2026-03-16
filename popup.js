@@ -1,7 +1,7 @@
 import { pullStoredData, origin, servers, activeServerId, setActiveServer, getStats, incrementStat, getHistory, clearHistory } from './js/storage.js';
 import {
     isLoggedIn, getStatusDownloads, getLimitSpeedStatus, setLimitSpeedStatus, getMaxSpeed, setMaxSpeed,
-    addPackage, checkURL, getQueueData,
+    addPackage, getQueueData,
     togglePause, freeSpace, deleteFinished, restartFailed, stopAllDownloads,
     stopDownload, restartFile, restartPackage, deletePackage, deletePackages, getCollectorData, pushToQueue,
     getProxyStatus, toggleProxy, getServerVersion,
@@ -27,9 +27,6 @@ let statusDiv = document.getElementById('status');
 let errorLabel = document.getElementById('error');
 let successLabel = document.getElementById('success');
 let pageDownloadDiv = document.getElementById('pageDownloadDiv');
-let downloadButton = document.getElementById('download');
-let downloadLabel = document.getElementById('downloadLabel');
-let downloadDiv = document.getElementById('downloadDiv');
 let optionsButton = document.getElementById('optionsButton');
 let limitSpeedButton = document.getElementById('limitSpeedButton');
 let proxyButton = document.getElementById('proxyButton');
@@ -798,8 +795,9 @@ function switchTab(tab) {
     actionButtons.hidden = (tab !== 'downloads');
     multiUrlDiv.hidden = (tab !== 'downloads' && tab !== 'collector');
     containerUploadDiv.hidden = (tab !== 'collector');
-    pageDownloadDiv.hidden = (tab !== 'downloads');
-    existingPackageSelect.hidden = (tab === 'collector') || (tab === 'history');
+    pageDownloadDiv.hidden = true;
+    packageNameInput.hidden = (tab !== 'collector');
+    existingPackageSelect.hidden = (tab !== 'collector');
     multiUrlButton.textContent = (tab === 'collector') ? msg('popupAddToCollector') : msg('popupAddAll');
     if (tab !== 'queue') { selectedPids.clear(); }
 
@@ -845,26 +843,6 @@ function setSuccessMessage(message, timeout = 3000) {
 }
 
 // --- Button handlers ---
-
-downloadButton.onclick = function() {
-    downloadButton.disabled = true;
-    chrome.tabs.query({active: true, lastFocusedWindow: true}, tabs => {
-        const url = tabs[0].url;
-        const name = tabs[0].title;
-        addPackage(name, url, function(success, errorMessage) {
-            if (!success) {
-                setErrorMessage(msg('popupDownloadError', [errorMessage]));
-                downloadButton.disabled = false;
-                return;
-            }
-            downloadDiv.hidden = true;
-            incrementStat('packagesAdded');
-            setSuccessMessage(msg('popupDownloadAdded'));
-            updateStatusDownloads();
-            updateStats();
-        });
-    });
-};
 
 optionsButton.onclick = () => chrome.tabs.create({ url: '/options.html' });
 
@@ -1096,23 +1074,5 @@ pullStoredData(function() {
             }
         });
 
-        chrome.tabs.query({active: true, lastFocusedWindow: true}, tabs => {
-            const url = tabs[0].url;
-            if (url.startsWith(origin)) return;
-            const name = tabs[0].title || '';
-            downloadLabel.innerText = name;
-            checkURL(url, function(success) {
-                if (!success) return;
-                getQueueData(function(urls) {
-                    if (activeView !== 'downloads') return;
-                    pageDownloadDiv.hidden = false;
-                    if (urls.includes(url)) {
-                        setErrorMessage(msg('popupAlreadyInQueue'));
-                        return;
-                    }
-                    downloadDiv.hidden = false;
-                });
-            });
-        });
     });
 });
