@@ -22,6 +22,8 @@ Features identified via PyLoad 0.5.0 API analysis and code quality audit (v2.1.0
 
 - **v3.6.0** — Analytics & Intelligence: download history (last 1000, circular buffer), mini-stats dashboard (per-hoster breakdown, peak speed, failure rate), smart retry with exponential backoff (5 attempts, configurable), advanced status filter in downloads view, History tab in popup
 
+- **v3.7.0** — UX Polish & Collector Refactor: simplified Downloads tab (package management moved to Collector), container upload exclusive to Collector tab, custom package name for multi-URL submissions, fixed addPackage dest parameter and uploadContainer reliability, skip page download check for PyLoad's own URL, fixed tab visibility race conditions, toolbar icon wrapping fix, GitHub Sponsors and Ko-fi funding links
+
 ---
 
 ## Backlog
