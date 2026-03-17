@@ -9,7 +9,7 @@ import {
     getCaptchaTask, setCaptchaResult,
     uploadContainer
 } from './js/pyload-api.js';
-import { applyI18n, msg } from './js/i18n.js';
+import { initLocale, applyI18n, msg } from './js/i18n.js';
 
 function nameFromUrl(url) {
     try {
@@ -21,7 +21,7 @@ function nameFromUrl(url) {
     return url.split('/').pop() || url;
 }
 
-applyI18n();
+initLocale().then(function () { applyI18n(); });
 
 let statusDiv = document.getElementById('status');
 let errorLabel = document.getElementById('error');
@@ -1043,7 +1043,8 @@ containerUploadButton.onclick = function() {
 
 // --- Init ---
 
-pullStoredData(function() {
+pullStoredData(async function() {
+    await initLocale();
     applyI18n();
     externalLinkButton.onclick = () => chrome.tabs.create({ url: `${origin}/home` });
     captchaLink.onclick = () => chrome.tabs.create({ url: `${origin}/home` });

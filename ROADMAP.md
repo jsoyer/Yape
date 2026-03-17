@@ -38,7 +38,7 @@ Quick wins from codebase audit. No new features, just making everything tighter.
 - [x] **Account verify button** — "Test" button in options to validate hoster credentials
 - [x] **Log viewer upgrade** — log level filter (DEBUG/INFO/WARNING/ERROR/CRITICAL), search, pagination
 - [x] **Progress notification multi-download** — show top 3 active downloads, not just 1
-- [ ] **Chrome Web Store listing update** — sync listing copy with v3.8.0 features (currently frozen at v3.3.0)
+- [x] **Chrome Web Store listing update** — sync listing copy with v3.8.0 features (updated from v3.3.0)
 
 ---
 

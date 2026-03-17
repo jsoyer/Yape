@@ -715,5 +715,13 @@
   "optionsLogNext": {
     "message": "Older",
     "description": "Log pagination older button"
+  },
+  "optionsLanguage": {
+    "message": "Language",
+    "description": "Language selector label"
+  },
+  "optionsLanguageAuto": {
+    "message": "Auto (browser)",
+    "description": "Language auto-detect option"
   }
 }

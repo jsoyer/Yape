@@ -1,8 +1,8 @@
 import { pullStoredData, setOrigin, origin, serverIp, serverPort, serverProtocol, serverPath, servers, activeServerId, addServer, removeServer, setActiveServer, isAutoRetryEnabled, setAutoRetryEnabled } from './js/storage.js';
 import { login, isLoggedIn, abortServerStatus, getAccounts, updateAccount, removeAccount, getLog } from './js/pyload-api.js';
-import { applyI18n, msg } from './js/i18n.js';
+import { initLocale, setLocale, getLocale, applyI18n, msg } from './js/i18n.js';
 
-applyI18n();
+initLocale().then(function () { applyI18n(); });
 
 let serverNameInput = document.getElementById('serverName');
 let serverListDiv = document.getElementById('serverListDiv');
@@ -507,8 +507,16 @@ autoRetryToggle.onchange = function() {
     setAutoRetryEnabled(autoRetryToggle.checked);
 };
 
+let localeSelect = document.getElementById('localeSelect');
+localeSelect.value = getLocale();
+localeSelect.onchange = function() {
+    setLocale(localeSelect.value);
+};
+
 loadLoginRateLimit();
-pullStoredData(function() {
+pullStoredData(async function() {
+    await initLocale();
+    localeSelect.value = getLocale();
     applyI18n();
     renderServerList();
     updateForm();

@@ -88,11 +88,19 @@
           </div>
         </div>
         <div class="border rounded p-3 mt-4">
-          <div class="form-check">
+          <div class="form-check mb-3">
             <input type="checkbox" class="form-check-input" id="autoRetryToggle" checked>
             <label class="form-check-label" for="autoRetryToggle" data-i18n="optionsAutoRetry">Auto-retry failed downloads</label>
+            <div class="small text-muted mt-1" data-i18n="optionsAutoRetryDesc">Retry up to 5 times with exponential backoff</div>
           </div>
-          <div class="small text-muted mt-1" data-i18n="optionsAutoRetryDesc">Retry up to 5 times with exponential backoff</div>
+          <div class="d-flex align-items-center gap-2">
+            <label for="localeSelect" class="small mb-0" data-i18n="optionsLanguage">Language</label>
+            <select id="localeSelect" class="form-select form-select-sm" style="width: auto">
+              <option value="auto" data-i18n="optionsLanguageAuto">Auto (browser)</option>
+              <option value="en">English</option>
+              <option value="fr">Français</option>
+            </select>
+          </div>
         </div>
       </div>
 

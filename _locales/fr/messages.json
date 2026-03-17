@@ -491,5 +491,11 @@
   },
   "optionsLogNext": {
     "message": "Plus ancien"
+  },
+  "optionsLanguage": {
+    "message": "Langue"
+  },
+  "optionsLanguageAuto": {
+    "message": "Auto (navigateur)"
   }
 }

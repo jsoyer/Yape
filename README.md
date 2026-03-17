@@ -1,8 +1,8 @@
 # Yapee — PyLoad Browser Extension
 
-A powerful, privacy-first browser extension for managing [PyLoad](https://pyload.net) downloads. Available for Chrome, Chromium, Edge, and Firefox.
+A powerful, privacy-first browser extension for managing [PyLoad](https://pyload.net) downloads — the spiritual successor to [Yape](https://github.com/RemiRigal/Yape), completely rewritten with Manifest V3. Available for Chrome, Chromium, Edge, and Firefox.
 
-**Current version:** 3.6.0 — Analytics, download history, smart retry, and advanced filters.
+**Current version:** 3.8.0 — Hardening & quality of life (speed validation, captcha timer, parallel submissions, log viewer upgrade).
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?logo=github)](https://github.com/sponsors/jsoyer)
 [![Ko-fi](https://img.shields.io/badge/Support-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/jsoyer)
@@ -24,21 +24,27 @@ A powerful, privacy-first browser extension for managing [PyLoad](https://pyload
 - Hoster account management for sites requiring login
 
 **User Interface**
-- Dark mode with automatic system preference detection
+- Dark mode with dynamic system theme detection (updates without reload)
+- Chrome Side Panel and Firefox Sidebar for persistent monitoring
 - Internationalization: English and French
 - Search and filter across downloads, queue, and collector
-- Download statistics tracking packages over time
-- Desktop notifications for completion, errors, and captcha alerts
+- Download history (last 1,000 entries) with search and status filter
+- Mini-stats dashboard: per-hoster breakdown, peak speed, failure rate
+- Desktop notifications: per-package completion, errors, captcha alerts with timeout warning
+- Keyboard shortcuts: Alt+Shift+P (pause), Alt+Shift+Y (popup)
 
 **Advanced Features**
 - Event-driven real-time updates via PyLoad's event streaming API
-- Context menu: right-click any link to send it to PyLoad
-- Multi-URL paste: add multiple URLs at once from the popup
-- Captcha solving directly in the popup
-- Server log viewer accessible from options
-- Speed limiter and proxy toggle for quick bandwidth control
+- Context menu: right-click any link or extract all hoster links from a page
+- Multi-URL paste with parallel submission and custom package names
+- Captcha solving directly in the popup with timeout countdown
+- Server log viewer with level filter, search, and pagination
+- Speed limiter (0–100,000 KB/s) with input validation and proxy toggle
+- Smart retry with exponential backoff (up to 5 attempts, configurable)
+- Batch operations: multi-select delete in queue, click-to-rename packages
+- Container file upload (DLC/CCF/RSDF) with 10 MB size guard
 - Tampermonkey companion script with one-click download buttons on 60+ hosters
-- DLC/CCF/RSDF container file upload support
+- Hoster account management with test/verify button
 
 **Technical**
 - Manifest V3 (Chrome) and Firefox-compatible via manifest.firefox.json
@@ -139,7 +145,7 @@ Yapee supports direct upload of DLC, CCF, and RSDF container files:
 | Browser | Manifest Version | Status |
 |---|---|---|
 | Chrome / Chromium / Edge | MV3 (`manifest.json`) | Fully supported |
-| Firefox >= 121 | MV3 (`manifest.firefox.json`) | Fully supported |
+| Firefox >= 109 | MV3 (`manifest.firefox.json`) | Fully supported |
 
 ---
 
@@ -187,7 +193,7 @@ See [PRIVACY.md](PRIVACY.md) for the complete data handling policy.
 
 ## Acknowledgments
 
-Yapee was originally created by [Remi Rigal](https://github.com/RemiRigal). This project has since been extensively rewritten with 15+ major features, a complete architecture overhaul, and full Firefox support. Thank you Remi for the foundation and for your work on the original extension.
+Yapee is the successor to [Yape](https://github.com/RemiRigal/Yape), originally created by [Rémi Rigal](https://github.com/RemiRigal). The project has since been completely rewritten with Manifest V3, 20+ major features, and full Firefox support. Thank you Rémi for the foundation.
 
 ---
 
