@@ -195,8 +195,15 @@ export async function checkURL(url, callback) {
     );
 }
 
+function safeInt(value) {
+    const n = parseInt(value, 10);
+    return isNaN(n) ? null : n;
+}
+
 export async function stopDownload(fid, callback) {
-    apiFetch(`/api/stopDownloads?file_ids=[${fid}]`,
+    const id = safeInt(fid);
+    if (id === null) { callback(false); return; }
+    apiFetch(`/api/stopDownloads?file_ids=[${id}]`,
         res => callback(res.ok),
         () => callback(false),
         'POST'
@@ -204,14 +211,18 @@ export async function stopDownload(fid, callback) {
 }
 
 export async function restartFile(fid, callback) {
-    apiFetch(`/api/restartFile?file_id=${fid}`,
+    const id = safeInt(fid);
+    if (id === null) { callback(false); return; }
+    apiFetch(`/api/restartFile?file_id=${id}`,
         res => callback(res.ok),
         () => callback(false)
     );
 }
 
 export async function deletePackage(pid, callback) {
-    apiFetch(`/api/deletePackages?package_ids=[${pid}]`,
+    const id = safeInt(pid);
+    if (id === null) { callback(false); return; }
+    apiFetch(`/api/deletePackages?package_ids=[${id}]`,
         res => callback(res.ok),
         () => callback(false),
         'POST'
@@ -219,7 +230,9 @@ export async function deletePackage(pid, callback) {
 }
 
 export async function deletePackages(pids, callback) {
-    apiFetch(`/api/deletePackages?package_ids=[${pids.join(',')}]`,
+    const ids = pids.map(safeInt).filter(n => n !== null);
+    if (!ids.length) { callback(false); return; }
+    apiFetch(`/api/deletePackages?package_ids=[${ids.join(',')}]`,
         res => callback(res.ok),
         () => callback(false),
         'POST'
@@ -227,7 +240,9 @@ export async function deletePackages(pids, callback) {
 }
 
 export async function setPackageData(pid, data, callback) {
-    apiFetch(`/api/setPackageData?pid=${pid}&data=${encodeURIComponent(JSON.stringify(data))}`,
+    const id = safeInt(pid);
+    if (id === null) { callback(false); return; }
+    apiFetch(`/api/setPackageData?pid=${id}&data=${encodeURIComponent(JSON.stringify(data))}`,
         res => callback(res.ok),
         () => callback(false),
         'POST'
@@ -235,7 +250,9 @@ export async function setPackageData(pid, data, callback) {
 }
 
 export async function addFiles(pid, links, callback) {
-    apiFetch(`/api/addFiles?pid=${pid}&links=${encodeURIComponent(JSON.stringify(links))}`,
+    const id = safeInt(pid);
+    if (id === null) { callback(false); return; }
+    apiFetch(`/api/addFiles?pid=${id}&links=${encodeURIComponent(JSON.stringify(links))}`,
         res => callback(res.ok),
         () => callback(false),
         'POST'
@@ -243,7 +260,9 @@ export async function addFiles(pid, links, callback) {
 }
 
 export async function restartPackage(pid, callback) {
-    apiFetch(`/api/restartPackage?pid=${pid}`,
+    const id = safeInt(pid);
+    if (id === null) { callback(false); return; }
+    apiFetch(`/api/restartPackage?pid=${id}`,
         res => callback(res.ok),
         () => callback(false)
     );
@@ -257,7 +276,9 @@ export async function getCollectorData(callback) {
 }
 
 export async function pushToQueue(pid, callback) {
-    apiFetch(`/api/pushToQueue?package_id=${pid}`,
+    const id = safeInt(pid);
+    if (id === null) { callback(false); return; }
+    apiFetch(`/api/pushToQueue?package_id=${id}`,
         res => callback(res.ok),
         () => callback(false),
         'POST'
@@ -303,7 +324,10 @@ export async function getQueuePackages(callback) {
 }
 
 export async function orderPackage(pid, position, callback) {
-    apiFetch(`/api/orderPackage?package_id=${pid}&position=${position}`,
+    const id = safeInt(pid);
+    const pos = safeInt(position);
+    if (id === null || pos === null) { callback(false); return; }
+    apiFetch(`/api/orderPackage?package_id=${id}&position=${pos}`,
         res => callback(res.ok),
         () => callback(false)
     );
@@ -320,7 +344,9 @@ export async function getCaptchaTask(callback) {
 }
 
 export async function setCaptchaResult(tid, result, callback) {
-    apiFetch(`/api/setCaptchaResult?tid=${tid}&result="${encodeURIComponent(result)}"`,
+    const id = safeInt(tid);
+    if (id === null) { callback(false); return; }
+    apiFetch(`/api/setCaptchaResult?tid=${id}&result="${encodeURIComponent(result)}"`,
         res => callback(res.ok),
         () => callback(false)
     );
@@ -348,7 +374,9 @@ export async function removeAccount(plugin, login, callback) {
 }
 
 export async function getLog(offset, callback) {
-    apiFetch(`/api/getLog?offset=${offset}`,
+    const off = safeInt(offset);
+    if (off === null) { callback([]); return; }
+    apiFetch(`/api/getLog?offset=${off}`,
         async res => { callback(await res.json()); },
         () => callback([])
     );

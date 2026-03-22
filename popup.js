@@ -11,6 +11,13 @@ import {
 } from './js/pyload-api.js';
 import { initLocale, applyI18n, msg } from './js/i18n.js';
 
+function setIcon(el, iconClass) {
+    el.textContent = '';
+    const icon = document.createElement('i');
+    icon.className = iconClass;
+    el.appendChild(icon);
+}
+
 function nameFromUrl(url) {
     try {
         const pathname = new URL(url).pathname;
@@ -295,7 +302,7 @@ function buildDownloadItem(download) {
     stopBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
     stopBtn.title = msg('ariaStop');
     stopBtn.setAttribute('aria-label', msg('ariaStop'));
-    stopBtn.innerHTML = '<i class="fa fa-stop"></i>';
+    setIcon(stopBtn, 'fa fa-stop');
     stopBtn.onclick = function() {
         stopBtn.disabled = true;
         stopDownload(download.fid, function() { updateStatusDownloads(); });
@@ -305,7 +312,7 @@ function buildDownloadItem(download) {
     restartBtn.className = 'btn btn-sm btn-outline-secondary py-0 px-1';
     restartBtn.title = msg('ariaRestart');
     restartBtn.setAttribute('aria-label', msg('ariaRestart'));
-    restartBtn.innerHTML = '<i class="fa fa-redo"></i>';
+    setIcon(restartBtn, 'fa fa-redo');
     restartBtn.onclick = function() {
         restartBtn.disabled = true;
         restartFile(download.fid, function() { updateStatusDownloads(); });
@@ -315,7 +322,7 @@ function buildDownloadItem(download) {
     delBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
     delBtn.title = msg('ariaDeletePackage');
     delBtn.setAttribute('aria-label', msg('ariaDeletePackage'));
-    delBtn.innerHTML = '<i class="fa fa-trash"></i>';
+    setIcon(delBtn, 'fa fa-trash');
     delBtn.onclick = function() {
         delBtn.disabled = true;
         deletePackage(download.packageID, function() { updateStatusDownloads(); });
@@ -484,7 +491,7 @@ function buildQueueItem(pkg, index, total) {
     upBtn.className = 'btn btn-sm btn-outline-secondary py-0 px-1';
     upBtn.title = msg('ariaMoveUp');
     upBtn.setAttribute('aria-label', msg('ariaMoveUp'));
-    upBtn.innerHTML = '<i class="fa fa-arrow-up"></i>';
+    setIcon(upBtn, 'fa fa-arrow-up');
     upBtn.disabled = index === 0;
     upBtn.onclick = function() {
         upBtn.disabled = true;
@@ -495,7 +502,7 @@ function buildQueueItem(pkg, index, total) {
     downBtn.className = 'btn btn-sm btn-outline-secondary py-0 px-1';
     downBtn.title = msg('ariaMoveDown');
     downBtn.setAttribute('aria-label', msg('ariaMoveDown'));
-    downBtn.innerHTML = '<i class="fa fa-arrow-down"></i>';
+    setIcon(downBtn, 'fa fa-arrow-down');
     downBtn.disabled = index === total - 1;
     downBtn.onclick = function() {
         downBtn.disabled = true;
@@ -506,7 +513,7 @@ function buildQueueItem(pkg, index, total) {
     retryBtn.className = 'btn btn-sm btn-outline-warning py-0 px-1';
     retryBtn.title = msg('ariaRetryPackage');
     retryBtn.setAttribute('aria-label', msg('ariaRetryPackage'));
-    retryBtn.innerHTML = '<i class="fa fa-redo"></i>';
+    setIcon(retryBtn, 'fa fa-redo');
     retryBtn.onclick = function() {
         retryBtn.disabled = true;
         restartPackage(pkg.pid, function() { updateQueueView(); });
@@ -516,7 +523,7 @@ function buildQueueItem(pkg, index, total) {
     delBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
     delBtn.title = msg('ariaDeletePackage');
     delBtn.setAttribute('aria-label', msg('ariaDeletePackage'));
-    delBtn.innerHTML = '<i class="fa fa-trash"></i>';
+    setIcon(delBtn, 'fa fa-trash');
     delBtn.onclick = function() {
         delBtn.disabled = true;
         deletePackage(pkg.pid, function() { updateQueueView(); });
@@ -645,7 +652,7 @@ function updateCollectorView() {
             queueBtn.className = 'btn btn-sm btn-outline-primary py-0 px-1';
             queueBtn.title = msg('ariaAddToQueue');
             queueBtn.setAttribute('aria-label', msg('ariaAddToQueue'));
-            queueBtn.innerHTML = '<i class="fa fa-play"></i>';
+            setIcon(queueBtn, 'fa fa-play');
             queueBtn.onclick = function() {
                 queueBtn.disabled = true;
                 pushToQueue(pkg.pid, function() { updateCollectorView(); });
@@ -655,7 +662,7 @@ function updateCollectorView() {
             delBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
             delBtn.title = msg('ariaDelete');
             delBtn.setAttribute('aria-label', msg('ariaDelete'));
-            delBtn.innerHTML = '<i class="fa fa-trash"></i>';
+            setIcon(delBtn, 'fa fa-trash');
             delBtn.onclick = function() {
                 delBtn.disabled = true;
                 deletePackage(pkg.pid, function() { updateCollectorView(); });
@@ -771,7 +778,14 @@ function updateStatsDashboard() {
             table.className = 'table table-sm table-striped mb-0';
             table.style.fontSize = '11px';
             const thead = document.createElement('thead');
-            thead.innerHTML = '<tr><th>Hoster</th><th class="text-end">OK</th><th class="text-end">Fail</th></tr>';
+            const headerRow = document.createElement('tr');
+            ['Hoster', 'OK', 'Fail'].forEach(function(text, i) {
+                const th = document.createElement('th');
+                if (i > 0) th.className = 'text-end';
+                th.textContent = text;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
             table.appendChild(thead);
             const tbody = document.createElement('tbody');
             hosters.slice(0, 10).forEach(function([hoster, data]) {
