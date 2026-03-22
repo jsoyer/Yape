@@ -259,7 +259,8 @@ export async function getCollectorData(callback) {
 export async function pushToQueue(pid, callback) {
     apiFetch(`/api/pushToQueue?package_id=${pid}`,
         res => callback(res.ok),
-        () => callback(false)
+        () => callback(false),
+        'POST'
     );
 }
 
