@@ -1,4 +1,4 @@
-import { pullStoredData, incrementStat, addHistoryEntries, batchUpdateStats, getRetryQueue, setRetryQueue, isAutoRetryEnabled, getSessionData, setSessionData } from './js/storage.js';
+import { pullStoredData, incrementStat, addHistoryEntries, batchUpdateStats, getRetryQueue, setRetryQueue, isAutoRetryEnabled } from './js/storage.js';
 import { addPackage, getStatusDownloads, isCaptchaWaiting, deleteFinished, togglePause, restartFile, isLoggedIn, checkURL } from './js/pyload-api.js';
 import { sendTelegramNotification } from './js/telegram.js';
 import { nameFromUrl } from './js/utils.js';
@@ -14,29 +14,26 @@ const notify = function(title, message, options = {}) {
     });
 }
 
-function downloadLink(info, tab) {
-    isLoggedIn(function(success, unauthorized) {
-        if (!success) {
-            if (unauthorized) notify('Yapee', chrome.i18n.getMessage('bgInvalidCredentials'));
-            else notify('Yapee', chrome.i18n.getMessage('bgServerUnreachable'));
-            return;
-        }
-        checkURL(info.linkUrl, function(valid) {
-            if (!valid) {
-                notify('Yapee', chrome.i18n.getMessage('bgCheckUrlError', ['unknown error']));
-                return;
-            }
-            const safeName = nameFromUrl(info.linkUrl).replace(/[^a-z0-9._\-]/gi, '_');
-            addPackage(safeName, info.linkUrl, function(pkgSuccess, error) {
-                if (!pkgSuccess) {
-                    notify('Yapee', chrome.i18n.getMessage('bgDownloadError', [error || 'unknown error']));
-                    return;
-                }
-                incrementStat('packagesAdded');
-                notify('Yapee', chrome.i18n.getMessage('bgDownloadAdded'));
-            });
-        });
-    });
+async function downloadLink(info, tab) {
+    const { success, unauthorized } = await isLoggedIn();
+    if (!success) {
+        if (unauthorized) notify('Yapee', chrome.i18n.getMessage('bgInvalidCredentials'));
+        else notify('Yapee', chrome.i18n.getMessage('bgServerUnreachable'));
+        return;
+    }
+    const valid = await checkURL(info.linkUrl);
+    if (!valid) {
+        notify('Yapee', chrome.i18n.getMessage('bgCheckUrlError', ['unknown error']));
+        return;
+    }
+    const safeName = nameFromUrl(info.linkUrl).replace(/[^a-z0-9._\-]/gi, '_');
+    const { success: pkgSuccess, error } = await addPackage(safeName, info.linkUrl);
+    if (!pkgSuccess) {
+        notify('Yapee', chrome.i18n.getMessage('bgDownloadError', [error || 'unknown error']));
+        return;
+    }
+    incrementStat('packagesAdded');
+    notify('Yapee', chrome.i18n.getMessage('bgDownloadAdded'));
 }
 
 function extractHoster(url) {
@@ -75,9 +72,10 @@ chrome.runtime.onInstalled.addListener( () => {
     chrome.alarms.create('checkDownloads', { periodInMinutes: ALARM_PERIOD_MINUTES });
 });
 
-chrome.contextMenus.onClicked.addListener((info, tab) => {
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId === 'yape') {
-        pullStoredData(() => { downloadLink(info, tab); });
+        await pullStoredData();
+        downloadLink(info, tab);
         return;
     }
     if (info.menuItemId === 'yape-extract') {
@@ -118,14 +116,12 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     }
 });
 
-function handleAddPackage(msg, sendResponse) {
+async function handleAddPackage(msg, sendResponse) {
     if (msg.action !== 'addPackage' || !msg.url) return false;
-    pullStoredData(() => {
-        addPackage(msg.name || msg.url, msg.url, (success, error) => {
-            if (success) incrementStat('packagesAdded');
-            sendResponse({ success, error: error || null });
-        });
-    });
+    await pullStoredData();
+    const { success, error } = await addPackage(msg.name || msg.url, msg.url);
+    if (success) incrementStat('packagesAdded');
+    sendResponse({ success, error: error || null });
     return true;
 }
 
@@ -135,11 +131,19 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         notify(msg.title, msg.message);
         return false;
     }
-    return handleAddPackage(msg, sendResponse);
+    if (msg.action === 'addPackage' && msg.url) {
+        handleAddPackage(msg, sendResponse);
+        return true;
+    }
+    return false;
 });
 
 chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
-    return handleAddPackage(msg, sendResponse);
+    if (msg.action === 'addPackage' && msg.url) {
+        handleAddPackage(msg, sendResponse);
+        return true;
+    }
+    return false;
 });
 
 // --- Badge + Enhanced Notifications ---
@@ -214,17 +218,17 @@ function processErrors(errorFids, notifiedErrors, downloads) {
 
 // Handles exponential-backoff auto-retry for failed downloads.
 async function processRetries(errorFids, activeFids) {
-    const retryEnabled = await new Promise(resolve => isAutoRetryEnabled(resolve));
+    const retryEnabled = await isAutoRetryEnabled();
     if (!retryEnabled) return;
 
-    const retryQueue = await new Promise(resolve => getRetryQueue(resolve));
+    const retryQueue = await getRetryQueue();
     let changed = false;
 
     for (const [fid, info] of Object.entries(errorFids)) {
         const entry = retryQueue[fid] || { attempts: 0, nextRetry: 0, backoffMs: INITIAL_RETRY_BACKOFF, name: info.name };
         if (entry.attempts >= MAX_RETRY_ATTEMPTS) continue;
         if (Date.now() < entry.nextRetry) continue;
-        restartFile(parseInt(fid, 10), () => {});
+        restartFile(parseInt(fid, 10));
         entry.attempts++;
         entry.backoffMs = Math.min(entry.backoffMs * 2, MAX_RETRY_BACKOFF);
         entry.nextRetry = Date.now() + entry.backoffMs;
@@ -244,12 +248,12 @@ async function processRetries(errorFids, activeFids) {
         }
     }
 
-    if (changed) setRetryQueue(retryQueue);
+    if (changed) void setRetryQueue(retryQueue);
 }
 
 // Updates the extension badge and fires captcha / progress notifications.
 async function updateBadgeAndCaptcha(currentCount, downloads, lastCaptcha) {
-    const hasCaptcha = await new Promise(resolve => isCaptchaWaiting(resolve));
+    const hasCaptcha = await isCaptchaWaiting();
 
     if (hasCaptcha) {
         chrome.action.setBadgeText({ text: '!' });
@@ -303,9 +307,9 @@ async function updateBadgeAndCaptcha(currentCount, downloads, lastCaptcha) {
 // Main orchestrator for the periodic alarm: fetches download state, fires all
 // notifications, updates analytics, and persists session state in one write.
 async function checkDownloads() {
-    await new Promise(resolve => pullStoredData(resolve));
+    await pullStoredData();
 
-    const downloads = await new Promise(resolve => getStatusDownloads(resolve));
+    const downloads = await getStatusDownloads();
     const currentCount = downloads.length;
 
     // Build current packages map: { pid: { name, percent, speed, url } }
@@ -329,12 +333,12 @@ async function checkDownloads() {
         }
     });
 
-    const data = await getSessionData(
+    const data = await chrome.storage.session.get(
         ['lastDownloadCount', 'lastActivePackages', 'lastCaptchaState', 'notifiedErrors']
     );
-    const lastCount = data.lastDownloadCount || 0;
-    const lastPackages = data.lastActivePackages || {};
-    const lastCaptcha = data.lastCaptchaState || false;
+    const lastCount = data.lastDownloadCount ?? 0;
+    const lastPackages = data.lastActivePackages ?? {};
+    const lastCaptcha = data.lastCaptchaState ?? false;
     const notifiedErrors = new Set(data.notifiedErrors || []);
 
     // Feature 1: Per-package completion + history tracking
@@ -356,7 +360,7 @@ async function checkDownloads() {
     const historyBatch = [...completionResult.historyBatch, ...errorResult.historyBatch];
     const statIncrements = { ...completionResult.statIncrements };
     for (const [k, v] of Object.entries(errorResult.statIncrements)) {
-        statIncrements[k] = (statIncrements[k] || 0) + v;
+        statIncrements[k] = (statIncrements[k] ?? 0) + v;
     }
     const hosterUpdates = [...completionResult.hosterUpdates, ...errorResult.hosterUpdates];
 
@@ -380,7 +384,7 @@ async function checkDownloads() {
     const hasCaptcha = await updateBadgeAndCaptcha(currentCount, downloads, lastCaptcha);
 
     // Save state (single write)
-    await setSessionData({
+    await chrome.storage.session.set({
         lastDownloadCount: currentCount,
         lastActivePackages: currentPackages,
         lastCaptchaState: hasCaptcha,
@@ -395,22 +399,19 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 // --- Notification button handler ---
 
-chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) => {
+chrome.notifications.onButtonClicked.addListener(async (notificationId, buttonIndex) => {
     if (notificationId === 'downloadsComplete' && buttonIndex === 0) {
-        pullStoredData(() => {
-            deleteFinished(() => {
-                chrome.notifications.clear(notificationId);
-            });
-        });
+        await pullStoredData();
+        await deleteFinished();
+        chrome.notifications.clear(notificationId);
     }
 });
 
 // --- Keyboard shortcuts ---
 
-chrome.commands.onCommand.addListener((command) => {
+chrome.commands.onCommand.addListener(async (command) => {
     if (command === 'toggle-pause') {
-        pullStoredData(() => {
-            togglePause(() => {});
-        });
+        await pullStoredData();
+        togglePause();
     }
 });

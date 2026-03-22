@@ -33,14 +33,13 @@ export function init(selectedPids, setButtonLoading, setErrorMessage) {
         updateBatchBar();
     };
 
-    batchDeleteBtn.onclick = function() {
+    batchDeleteBtn.onclick = async function() {
         if (_selectedPids.size === 0) return;
         _setButtonLoading(batchDeleteBtn, true);
-        deletePackages([..._selectedPids], function() {
-            _selectedPids.clear();
-            _setButtonLoading(batchDeleteBtn, false);
-            updateQueueView();
-        });
+        await deletePackages([..._selectedPids]);
+        _selectedPids.clear();
+        _setButtonLoading(batchDeleteBtn, false);
+        updateQueueView();
     };
 }
 
@@ -89,7 +88,7 @@ function buildFileList(pkg) {
         row.style.cssText = 'padding: 2px 0 2px 28px; font-size: 11px';
 
         const badge = document.createElement('span');
-        const status = (link.statusmsg || link.status || 'unknown').toString().toLowerCase();
+        const status = (link.statusmsg ?? link.status ?? 'unknown').toString().toLowerCase();
         badge.className = 'badge ' + statusBadgeClass(status);
         badge.textContent = statusLabel(status);
 
@@ -111,10 +110,11 @@ function buildFileList(pkg) {
             retryBtn.className = 'btn btn-sm btn-outline-warning py-0 px-1';
             retryBtn.style.fontSize = '10px';
             setIcon(retryBtn, 'fa fa-redo');
-            retryBtn.onclick = function(e) {
+            retryBtn.onclick = async function(e) {
                 e.stopPropagation();
                 retryBtn.disabled = true;
-                restartFile(link.fid, function() { updateQueueView(); });
+                await restartFile(link.fid);
+                updateQueueView();
             };
             row.appendChild(retryBtn);
         }
@@ -165,11 +165,12 @@ function buildQueueItem(pkg, index, total) {
     row.ondragleave = function() {
         row.classList.remove('yape-drag-over');
     };
-    row.ondrop = function(e) {
+    row.ondrop = async function(e) {
         e.preventDefault();
         row.classList.remove('yape-drag-over');
         if (dragSrcIndex === null || dragSrcIndex === index) return;
-        orderPackage(pkg.pid, index, function() { updateQueueView(); });
+        await orderPackage(pkg.pid, index);
+        updateQueueView();
     };
 
     const checkbox = document.createElement('input');
@@ -211,13 +212,12 @@ function buildQueueItem(pkg, index, total) {
         input.focus();
         input.select();
 
-        const save = function() {
+        const save = async function() {
             const newName = input.value.trim();
             if (newName && newName !== pkg.name) {
-                setPackageData(pkg.pid, { name: newName }, function(ok) {
-                    if (ok) updateQueueView();
-                    else { input.replaceWith(nameDiv); _setErrorMessage(msg('popupRenameFailed')); }
-                });
+                const ok = await setPackageData(pkg.pid, { name: newName });
+                if (ok) updateQueueView();
+                else { input.replaceWith(nameDiv); _setErrorMessage(msg('popupRenameFailed')); }
             } else {
                 input.replaceWith(nameDiv);
             }
@@ -232,7 +232,7 @@ function buildQueueItem(pkg, index, total) {
     const countSpan = document.createElement('span');
     countSpan.className = 'text-muted';
     countSpan.style.whiteSpace = 'nowrap';
-    const linkCount = pkg.links ? pkg.links.length : 0;
+    const linkCount = pkg.links?.length ?? 0;
     countSpan.textContent = msg('popupLink', [String(linkCount)]);
 
     const upBtn = document.createElement('button');
@@ -241,9 +241,10 @@ function buildQueueItem(pkg, index, total) {
     upBtn.setAttribute('aria-label', msg('ariaMoveUp'));
     setIcon(upBtn, 'fa fa-arrow-up');
     upBtn.disabled = index === 0;
-    upBtn.onclick = function() {
+    upBtn.onclick = async function() {
         upBtn.disabled = true;
-        orderPackage(pkg.pid, index - 1, function() { updateQueueView(); });
+        await orderPackage(pkg.pid, index - 1);
+        updateQueueView();
     };
 
     const downBtn = document.createElement('button');
@@ -252,9 +253,10 @@ function buildQueueItem(pkg, index, total) {
     downBtn.setAttribute('aria-label', msg('ariaMoveDown'));
     setIcon(downBtn, 'fa fa-arrow-down');
     downBtn.disabled = index === total - 1;
-    downBtn.onclick = function() {
+    downBtn.onclick = async function() {
         downBtn.disabled = true;
-        orderPackage(pkg.pid, index + 1, function() { updateQueueView(); });
+        await orderPackage(pkg.pid, index + 1);
+        updateQueueView();
     };
 
     const retryBtn = document.createElement('button');
@@ -262,22 +264,16 @@ function buildQueueItem(pkg, index, total) {
     retryBtn.title = msg('ariaRetryPackage');
     retryBtn.setAttribute('aria-label', msg('ariaRetryPackage'));
     setIcon(retryBtn, 'fa fa-redo');
-    retryBtn.onclick = function() {
+    retryBtn.onclick = async function() {
         retryBtn.disabled = true;
-        restartPackage(pkg.pid, function() {
-            const aborted = (pkg.links || []).filter(function(link) {
-                const s = (link.statusmsg || link.status || '').toString().toLowerCase();
-                return s === 'aborted' || s === '10';
-            });
-            if (!aborted.length) { updateQueueView(); return; }
-            let done = 0;
-            aborted.forEach(function(link) {
-                restartFile(link.fid, function() {
-                    done++;
-                    if (done === aborted.length) updateQueueView();
-                });
-            });
+        await restartPackage(pkg.pid);
+        const aborted = (pkg.links || []).filter(function(link) {
+            const s = (link.statusmsg ?? link.status ?? '').toString().toLowerCase();
+            return s === 'aborted' || s === '10';
         });
+        if (!aborted.length) { updateQueueView(); return; }
+        await Promise.all(aborted.map(link => restartFile(link.fid)));
+        updateQueueView();
     };
 
     const delBtn = document.createElement('button');
@@ -285,9 +281,10 @@ function buildQueueItem(pkg, index, total) {
     delBtn.title = msg('ariaDeletePackage');
     delBtn.setAttribute('aria-label', msg('ariaDeletePackage'));
     setIcon(delBtn, 'fa fa-trash');
-    delBtn.onclick = function() {
+    delBtn.onclick = async function() {
         delBtn.disabled = true;
-        deletePackage(pkg.pid, function() { updateQueueView(); });
+        await deletePackage(pkg.pid);
+        updateQueueView();
     };
 
     row.appendChild(checkbox);
@@ -312,46 +309,45 @@ function updateBatchBar() {
     else selectAllQueue.indeterminate = true;
 }
 
-export function updateQueueView(searchTerm) {
-    getQueuePackages(function(packages) {
-        queueDiv.textContent = '';
+export async function updateQueueView(searchTerm) {
+    const packages = await getQueuePackages();
+    queueDiv.textContent = '';
 
-        const filtered = searchTerm
-            ? packages.filter(p => p.name.toLowerCase().includes(searchTerm))
-            : packages;
+    const filtered = searchTerm
+        ? packages.filter(p => p.name.toLowerCase().includes(searchTerm))
+        : packages;
 
-        if (!filtered.length) {
-            const empty = document.createElement('div');
-            empty.className = 'text-center m-4 text-muted';
-            empty.textContent = msg('popupQueueEmpty');
-            queueDiv.appendChild(empty);
-            batchBar.hidden = true;
-            return;
-        }
+    if (!filtered.length) {
+        const empty = document.createElement('div');
+        empty.className = 'text-center m-4 text-muted';
+        empty.textContent = msg('popupQueueEmpty');
+        queueDiv.appendChild(empty);
+        batchBar.hidden = true;
+        return;
+    }
 
-        // Prune selectedPids to only include visible packages
-        const visiblePids = new Set(filtered.map(p => p.pid));
-        for (const pid of _selectedPids) {
-            if (!visiblePids.has(pid)) _selectedPids.delete(pid);
-        }
+    // Prune selectedPids to only include visible packages
+    const visiblePids = new Set(filtered.map(p => p.pid));
+    for (const pid of _selectedPids) {
+        if (!visiblePids.has(pid)) _selectedPids.delete(pid);
+    }
 
-        filtered.forEach(function(pkg, index) {
-            queueDiv.appendChild(buildQueueItem(pkg, index, filtered.length));
-        });
-
-        batchBar.hidden = false;
-        updateBatchBar();
-
-        // Populate existing-package dropdown for add-to-existing feature
-        existingPackageSelect.hidden = false;
-        const currentVal = existingPackageSelect.value;
-        while (existingPackageSelect.options.length > 1) existingPackageSelect.remove(1);
-        packages.forEach(function(pkg) {
-            const opt = document.createElement('option');
-            opt.value = pkg.pid;
-            opt.textContent = pkg.name;
-            existingPackageSelect.appendChild(opt);
-        });
-        existingPackageSelect.value = currentVal;
+    filtered.forEach(function(pkg, index) {
+        queueDiv.appendChild(buildQueueItem(pkg, index, filtered.length));
     });
+
+    batchBar.hidden = false;
+    updateBatchBar();
+
+    // Populate existing-package dropdown for add-to-existing feature
+    existingPackageSelect.hidden = false;
+    const currentVal = existingPackageSelect.value;
+    while (existingPackageSelect.options.length > 1) existingPackageSelect.remove(1);
+    packages.forEach(function(pkg) {
+        const opt = document.createElement('option');
+        opt.value = pkg.pid;
+        opt.textContent = pkg.name;
+        existingPackageSelect.appendChild(opt);
+    });
+    existingPackageSelect.value = currentVal;
 }

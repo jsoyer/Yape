@@ -16,8 +16,6 @@ import { init as initQueue, updateQueueView } from './js/views/queue.js';
 import { init as initCollector, updateCollectorView } from './js/views/collector.js';
 import { init as initHistory, updateHistoryView, updateStatsDashboard } from './js/views/history.js';
 
-initLocale().then(function () { applyI18n(); });
-
 const statusDiv = document.getElementById('status');
 const errorLabel = document.getElementById('error');
 const successLabel = document.getElementById('success');
@@ -118,28 +116,25 @@ function updatePauseButton(paused) {
     pauseButton.disabled = false;
 }
 
-function updateLimitSpeedStatus() {
-    getLimitSpeedStatus(function(status) {
-        limitSpeedStatus = status;
-        limitSpeedButton.style.color = limitSpeedStatus ? '' : 'var(--bs-primary)';
-        limitSpeedButton.disabled = false;
-        if (limitSpeedStatus) {
-            maxSpeedInput.hidden = false;
-            getMaxSpeed(function(speed) {
-                maxSpeedInput.value = speed > 0 ? speed : '';
-            });
-        } else {
-            maxSpeedInput.hidden = true;
-        }
-    });
+async function updateLimitSpeedStatus() {
+    const status = await getLimitSpeedStatus();
+    limitSpeedStatus = status;
+    limitSpeedButton.style.color = limitSpeedStatus ? '' : 'var(--bs-primary)';
+    limitSpeedButton.disabled = false;
+    if (limitSpeedStatus) {
+        maxSpeedInput.hidden = false;
+        const speed = await getMaxSpeed();
+        maxSpeedInput.value = speed > 0 ? speed : '';
+    } else {
+        maxSpeedInput.hidden = true;
+    }
 }
 
-function updateProxyStatus() {
-    getProxyStatus(function(status) {
-        proxyStatus = status;
-        proxyButton.style.color = proxyStatus ? 'var(--bs-primary)' : '';
-        proxyButton.disabled = false;
-    });
+async function updateProxyStatus() {
+    const status = await getProxyStatus();
+    proxyStatus = status;
+    proxyButton.style.color = proxyStatus ? 'var(--bs-primary)' : '';
+    proxyButton.disabled = false;
 }
 
 function formatCaptchaElapsed(ms) {
@@ -150,63 +145,59 @@ function formatCaptchaElapsed(ms) {
     return `${min}min${sec > 0 ? String(sec).padStart(2, '0') : ''}`;
 }
 
-function updateCaptchaAlert() {
-    getCaptchaTask(function(task) {
-        currentCaptchaTask = task;
-        if (!task) {
-            captchaAlert.hidden = true;
-            captchaImage.hidden = true;
-            captchaForm.hidden = true;
-            captchaInput.value = '';
-            captchaSeenAt = null;
-            if (captchaTimerInterval) { clearInterval(captchaTimerInterval); captchaTimerInterval = null; }
-            return;
-        }
-        captchaAlert.hidden = false;
-        if (!captchaSeenAt) captchaSeenAt = Date.now();
-        if (task.src) {
-            captchaImage.src = task.src;
-            captchaImage.hidden = false;
-            captchaForm.hidden = false;
-        }
-        if (!captchaTimerInterval) {
-            const timerSpan = document.getElementById('captchaTimer');
-            captchaTimerInterval = setInterval(function() {
-                if (!captchaSeenAt) return;
-                const elapsed = Date.now() - captchaSeenAt;
-                if (timerSpan) timerSpan.textContent = elapsed >= 30000 ? msg('popupCaptchaTimeout', [formatCaptchaElapsed(elapsed)]) : '';
-                if (elapsed >= CAPTCHA_DANGER_THRESHOLD) timerSpan.className = 'small text-danger fw-bold';
-                else timerSpan.className = 'small text-warning';
-            }, 1000);
-        }
-    });
+async function updateCaptchaAlert() {
+    const task = await getCaptchaTask();
+    currentCaptchaTask = task;
+    if (!task) {
+        captchaAlert.hidden = true;
+        captchaImage.hidden = true;
+        captchaForm.hidden = true;
+        captchaInput.value = '';
+        captchaSeenAt = null;
+        if (captchaTimerInterval) { clearInterval(captchaTimerInterval); captchaTimerInterval = null; }
+        return;
+    }
+    captchaAlert.hidden = false;
+    if (!captchaSeenAt) captchaSeenAt = Date.now();
+    if (task.src) {
+        captchaImage.src = task.src;
+        captchaImage.hidden = false;
+        captchaForm.hidden = false;
+    }
+    if (!captchaTimerInterval) {
+        const timerSpan = document.getElementById('captchaTimer');
+        captchaTimerInterval = setInterval(function() {
+            if (!captchaSeenAt) return;
+            const elapsed = Date.now() - captchaSeenAt;
+            if (timerSpan) timerSpan.textContent = elapsed >= 30000 ? msg('popupCaptchaTimeout', [formatCaptchaElapsed(elapsed)]) : '';
+            if (elapsed >= CAPTCHA_DANGER_THRESHOLD) timerSpan.className = 'small text-danger fw-bold';
+            else timerSpan.className = 'small text-warning';
+        }, 1000);
+    }
 }
 
-function updateFreeSpace() {
-    freeSpace(function(bytes) {
-        if (bytes == null) return;
-        freeSpaceDiv.textContent = msg('popupFreeSpace', [formatBytes(bytes)]);
-        freeSpaceDiv.hidden = false;
-    });
+async function updateFreeSpace() {
+    const bytes = await freeSpace();
+    if (bytes == null) return;
+    freeSpaceDiv.textContent = msg('popupFreeSpace', [formatBytes(bytes)]);
+    freeSpaceDiv.hidden = false;
 }
 
-function updateServerVersion() {
-    getServerVersion(function(version) {
-        if (version == null) return;
-        serverVersionDiv.textContent = `PyLoad ${version}`;
-        serverVersionDiv.hidden = false;
-    });
+async function updateServerVersion() {
+    const version = await getServerVersion();
+    if (version == null) return;
+    serverVersionDiv.textContent = `PyLoad ${version}`;
+    serverVersionDiv.hidden = false;
 }
 
-function updateStats() {
-    getStats(function(stats) {
-        if (!stats.packagesAdded && !stats.totalDownloads) return;
-        const parts = [];
-        if (stats.packagesAdded) parts.push(msg('popupStats', [String(stats.packagesAdded)]));
-        if (stats.totalDownloads) parts.push(msg('popupStatsTotal', [String(stats.totalDownloads), String(stats.totalFailures || 0)]));
-        statsDiv.textContent = parts.join(' | ');
-        statsDiv.hidden = false;
-    });
+async function updateStats() {
+    const stats = await getStats();
+    if (!stats.packagesAdded && !stats.totalDownloads) return;
+    const parts = [];
+    if (stats.packagesAdded) parts.push(msg('popupStats', [String(stats.packagesAdded)]));
+    if (stats.totalDownloads) parts.push(msg('popupStatsTotal', [String(stats.totalDownloads), String(stats.totalFailures ?? 0)]));
+    statsDiv.textContent = parts.join(' | ');
+    statsDiv.hidden = false;
 }
 
 // --- Search ---
@@ -230,32 +221,31 @@ statusFilter.onchange = function() {
 
 // --- Event-driven polling ---
 
-function startEventLoop() {
-    getEvents(eventUuid, function(events) {
-        if (events === null) {
-            pollTimeout = setTimeout(function() {
-                if (activeView === 'downloads') updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
-                else if (activeView === 'queue') updateQueueView(searchTerm);
-                startEventLoop();
-            }, POLL_FALLBACK_INTERVAL);
-            return;
-        }
+async function startEventLoop() {
+    const events = await getEvents(eventUuid);
+    if (events === null) {
+        pollTimeout = setTimeout(function() {
+            if (activeView === 'downloads') updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
+            else if (activeView === 'queue') updateQueueView(searchTerm);
+            startEventLoop();
+        }, POLL_FALLBACK_INTERVAL);
+        return;
+    }
 
-        const hasQueueEvent = events.some(e =>
-            e.destination === 'queue' || e.event === 'reload'
-        );
-        const hasCollectorEvent = events.some(e =>
-            e.destination === 'collector'
-        );
+    const hasQueueEvent = events.some(e =>
+        e.destination === 'queue' || e.event === 'reload'
+    );
+    const hasCollectorEvent = events.some(e =>
+        e.destination === 'collector'
+    );
 
-        if (activeView === 'downloads') updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
-        else if (activeView === 'queue' && hasQueueEvent) updateQueueView(searchTerm);
-        if (hasCollectorEvent && activeView === 'collector') {
-            updateCollectorView(searchTerm);
-        }
+    if (activeView === 'downloads') updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
+    else if (activeView === 'queue' && hasQueueEvent) updateQueueView(searchTerm);
+    if (hasCollectorEvent && activeView === 'collector') {
+        updateCollectorView(searchTerm);
+    }
 
-        pollTimeout = setTimeout(startEventLoop, 1000);
-    });
+    pollTimeout = setTimeout(startEventLoop, 1000);
 }
 
 // --- Tab switching ---
@@ -307,62 +297,58 @@ function switchTab(tab) {
 
 optionsButton.onclick = () => chrome.tabs.create({ url: '/options.html' });
 
-limitSpeedButton.onclick = function() {
+limitSpeedButton.onclick = async function() {
     limitSpeedStatus = !limitSpeedStatus;
     limitSpeedButton.disabled = true;
-    setLimitSpeedStatus(limitSpeedStatus, () => updateLimitSpeedStatus());
+    await setLimitSpeedStatus(limitSpeedStatus);
+    updateLimitSpeedStatus();
 };
 
-maxSpeedInput.onchange = function() {
+maxSpeedInput.onchange = async function() {
     let val = parseInt(maxSpeedInput.value, 10);
     if (isNaN(val)) return;
     val = Math.max(0, Math.min(val, MAX_SPEED_INPUT));
     maxSpeedInput.value = val || '';
-    setMaxSpeed(val, function() {});
+    await setMaxSpeed(val);
 };
 
-proxyButton.onclick = function() {
+proxyButton.onclick = async function() {
     proxyButton.disabled = true;
-    toggleProxy(function(active) {
-        if (active !== null) {
-            proxyStatus = active;
-            proxyButton.style.color = proxyStatus ? 'var(--bs-primary)' : '';
-        }
-        proxyButton.disabled = false;
-    });
+    const active = await toggleProxy();
+    if (active !== null) {
+        proxyStatus = active;
+        proxyButton.style.color = proxyStatus ? 'var(--bs-primary)' : '';
+    }
+    proxyButton.disabled = false;
 };
 
-pauseButton.onclick = function() {
+pauseButton.onclick = async function() {
     pauseButton.disabled = true;
-    togglePause(function(paused) {
-        if (paused !== null) updatePauseButton(paused);
-        else pauseButton.disabled = false;
-    });
+    const paused = await togglePause();
+    if (paused !== null) updatePauseButton(paused);
+    else pauseButton.disabled = false;
 };
 
-stopAllButton.onclick = function() {
+stopAllButton.onclick = async function() {
     setButtonLoading(stopAllButton, true);
-    stopAllDownloads(function() {
-        updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
-        setButtonLoading(stopAllButton, false);
-    });
+    await stopAllDownloads();
+    updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
+    setButtonLoading(stopAllButton, false);
 };
 
-restartFailedButton.onclick = function() {
+restartFailedButton.onclick = async function() {
     setButtonLoading(restartFailedButton, true);
-    restartFailed(function() {
-        setSuccessMessage(msg('popupFailedRestarted'));
-        setButtonLoading(restartFailedButton, false);
-    });
+    await restartFailed();
+    setSuccessMessage(msg('popupFailedRestarted'));
+    setButtonLoading(restartFailedButton, false);
 };
 
-deleteFinishedButton.onclick = function() {
+deleteFinishedButton.onclick = async function() {
     setButtonLoading(deleteFinishedButton, true);
-    deleteFinished(function(success) {
-        if (success) setSuccessMessage(msg('popupFinishedCleared'));
-        updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
-        setButtonLoading(deleteFinishedButton, false);
-    });
+    const success = await deleteFinished();
+    if (success) setSuccessMessage(msg('popupFinishedCleared'));
+    updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
+    setButtonLoading(deleteFinishedButton, false);
 };
 
 downloadsTab.onclick = () => switchTab('downloads');
@@ -374,20 +360,19 @@ captchaInput.onkeydown = function(e) {
     if (e.key === 'Enter') captchaSubmit.click();
 };
 
-captchaSubmit.onclick = function() {
+captchaSubmit.onclick = async function() {
     if (!currentCaptchaTask) return;
     const result = captchaInput.value.trim();
     if (!result) return;
     captchaSubmit.disabled = true;
-    setCaptchaResult(currentCaptchaTask.tid, result, function() {
-        captchaInput.value = '';
-        captchaSubmit.disabled = false;
-        currentCaptchaTask = null;
-        updateCaptchaAlert();
-    });
+    await setCaptchaResult(currentCaptchaTask.tid, result);
+    captchaInput.value = '';
+    captchaSubmit.disabled = false;
+    currentCaptchaTask = null;
+    updateCaptchaAlert();
 };
 
-multiUrlButton.onclick = function() {
+multiUrlButton.onclick = async function() {
     const lines = multiUrlInput.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     if (!lines.length) return;
     setButtonLoading(multiUrlButton, true);
@@ -396,18 +381,17 @@ multiUrlButton.onclick = function() {
 
     // Add to existing package
     if (targetPid) {
-        addFiles(parseInt(targetPid, 10), lines, function(ok) {
-            setButtonLoading(multiUrlButton, false);
-            if (ok) {
-                multiUrlInput.value = '';
-                incrementStat('packagesAdded');
-                setSuccessMessage(msg('popupUrlsAdded', [String(lines.length)]));
-            } else {
-                setErrorMessage(msg('popupUrlsFailed', [String(lines.length)]));
-            }
-            updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
-            updateStats();
-        });
+        const ok = await addFiles(parseInt(targetPid, 10), lines);
+        setButtonLoading(multiUrlButton, false);
+        if (ok) {
+            multiUrlInput.value = '';
+            incrementStat('packagesAdded');
+            setSuccessMessage(msg('popupUrlsAdded', [String(lines.length)]));
+        } else {
+            setErrorMessage(msg('popupUrlsFailed', [String(lines.length)]));
+        }
+        updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
+        updateStats();
         return;
     }
 
@@ -432,26 +416,22 @@ multiUrlButton.onclick = function() {
 
     // Custom name: group all URLs into one package
     if (customName) {
-        addPackage(customName, lines, function(success) {
-            onComplete(success, success ? 0 : lines.length);
-        }, dest);
+        const { success } = await addPackage(customName, lines, dest);
+        onComplete(success, success ? 0 : lines.length);
         return;
     }
 
     // No name: one package per URL with auto-generated name (parallel)
-    const promises = lines.map(function(url) {
-        return new Promise(function(resolve) {
-            const name = nameFromUrl(url);
-            addPackage(name, url, function(success) { resolve(success); }, dest);
-        });
-    });
-    Promise.all(promises).then(function(results) {
-        const errors = results.filter(function(s) { return !s; }).length;
-        onComplete(errors === 0, errors);
-    });
+    const results = await Promise.all(lines.map(async function(url) {
+        const name = nameFromUrl(url);
+        const { success } = await addPackage(name, url, dest);
+        return success;
+    }));
+    const errors = results.filter(function(s) { return !s; }).length;
+    onComplete(errors === 0, errors);
 };
 
-containerUploadButton.onclick = function() {
+containerUploadButton.onclick = async function() {
     const file = containerFileInput.files[0];
     if (!file) return;
     const ext = file.name.split('.').pop().toLowerCase();
@@ -464,18 +444,17 @@ containerUploadButton.onclick = function() {
         return;
     }
     setButtonLoading(containerUploadButton, true);
-    uploadContainer(file, function(success, error) {
-        setButtonLoading(containerUploadButton, false);
-        if (success) {
-            containerFileInput.value = '';
-            incrementStat('packagesAdded');
-            setSuccessMessage(msg('popupUploadSuccess'));
-            updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
-            updateStats();
-        } else {
-            setErrorMessage(msg('popupUploadError', [error || 'Unknown error']));
-        }
-    });
+    const { success, error } = await uploadContainer(file);
+    setButtonLoading(containerUploadButton, false);
+    if (success) {
+        containerFileInput.value = '';
+        incrementStat('packagesAdded');
+        setSuccessMessage(msg('popupUploadSuccess'));
+        updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
+        updateStats();
+    } else {
+        setErrorMessage(msg('popupUploadError', [error || 'Unknown error']));
+    }
 };
 
 // --- Init view modules (after switchTab is defined) ---
@@ -486,63 +465,63 @@ initHistory();
 
 // --- Init ---
 
-pullStoredData(async function() {
+(async function() {
+    await pullStoredData();
     await initLocale();
     applyI18n();
     externalLinkButton.onclick = () => chrome.tabs.create({ url: `${origin}/home` });
     captchaLink.onclick = () => chrome.tabs.create({ url: `${origin}/home` });
 
-    isLoggedIn(function(loggedIn, unauthorized, error, response) {
-        if (!loggedIn) {
-            statusDiv.textContent = '';
-            const wrapper = document.createElement('div');
-            wrapper.className = 'text-center m-3';
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'text-muted mb-2';
-            msgDiv.textContent = error || msg('popupNotLoggedIn');
-            wrapper.appendChild(msgDiv);
-            const btn = document.createElement('button');
-            btn.className = 'btn btn-sm btn-primary';
-            btn.textContent = msg('popupGoToOptions');
-            btn.onclick = () => chrome.runtime.openOptionsPage();
-            wrapper.appendChild(btn);
-            statusDiv.appendChild(wrapper);
-            return;
-        }
+    const { success: loggedIn, unauthorized, error, response } = await isLoggedIn();
+    if (!loggedIn) {
+        statusDiv.textContent = '';
+        const wrapper = document.createElement('div');
+        wrapper.className = 'text-center m-3';
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'text-muted mb-2';
+        msgDiv.textContent = error || msg('popupNotLoggedIn');
+        wrapper.appendChild(msgDiv);
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-sm btn-primary';
+        btn.textContent = msg('popupGoToOptions');
+        btn.onclick = () => chrome.runtime.openOptionsPage();
+        wrapper.appendChild(btn);
+        statusDiv.appendChild(wrapper);
+        return;
+    }
 
-        updatePauseButton(response && response.paused);
-        updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
-        startEventLoop();
-        updateLimitSpeedStatus();
-        updateProxyStatus();
-        updateFreeSpace();
-        updateServerVersion();
-        updateStats();
-        viewTabs.hidden = false;
-        multiUrlDiv.hidden = false;
-        filterBar.hidden = false;
+    updatePauseButton(response && response.paused);
+    updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
+    startEventLoop();
+    updateLimitSpeedStatus();
+    updateProxyStatus();
+    updateFreeSpace();
+    updateServerVersion();
+    updateStats();
+    viewTabs.hidden = false;
+    multiUrlDiv.hidden = false;
+    filterBar.hidden = false;
 
-        if (servers.length > 1) {
-            serverSelect.textContent = '';
-            servers.forEach(function(s) {
-                const opt = document.createElement('option');
-                opt.value = s.id;
-                opt.textContent = s.name;
-                opt.selected = s.id === activeServerId;
-                serverSelect.appendChild(opt);
-            });
-            serverSelect.hidden = false;
-            serverSelect.onchange = function() {
-                setActiveServer(serverSelect.value, () => location.reload());
-            };
-        }
-
-        chrome.storage.session.get(['extractedLinks'], function(data) {
-            if (data.extractedLinks && data.extractedLinks.length > 0) {
-                multiUrlInput.value = data.extractedLinks.join('\n');
-                chrome.storage.session.remove('extractedLinks');
-                setSuccessMessage(msg('popupLinksExtracted', [String(data.extractedLinks.length)]));
-            }
+    if (servers.length > 1) {
+        serverSelect.textContent = '';
+        servers.forEach(function(s) {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.name;
+            opt.selected = s.id === activeServerId;
+            serverSelect.appendChild(opt);
         });
-    });
-});
+        serverSelect.hidden = false;
+        serverSelect.onchange = async function() {
+            await setActiveServer(serverSelect.value);
+            location.reload();
+        };
+    }
+
+    const data = await chrome.storage.session.get(['extractedLinks']);
+    if (data.extractedLinks?.length > 0) {
+        multiUrlInput.value = data.extractedLinks.join('\n');
+        chrome.storage.session.remove('extractedLinks');
+        setSuccessMessage(msg('popupLinksExtracted', [String(data.extractedLinks.length)]));
+    }
+})();

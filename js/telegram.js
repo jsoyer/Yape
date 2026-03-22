@@ -48,19 +48,18 @@ function processQueue() {
     }, wait);
 }
 
-export function sendTelegramNotification(title, message, eventType) {
-    getTelegramConfig(function(config) {
-        if (!config.enabled || !config.botToken || !config.chatId) return;
-        if (!config.events[eventType]) return;
+export async function sendTelegramNotification(title, message, eventType) {
+    const config = await getTelegramConfig();
+    if (!config.enabled || !config.botToken || !config.chatId) return;
+    if (!config.events[eventType]) return;
 
-        const parts = [`<b>Yapee</b>`];
-        if (title && title !== 'Yapee') parts.push(escapeHtml(title));
-        if (message) parts.push(escapeHtml(message));
-        const text = parts.join('\n');
+    const parts = [`<b>Yapee</b>`];
+    if (title && title !== 'Yapee') parts.push(escapeHtml(title));
+    if (message) parts.push(escapeHtml(message));
+    const text = parts.join('\n');
 
-        sendQueue.push({ botToken: config.botToken, chatId: config.chatId, text });
-        processQueue();
-    });
+    sendQueue.push({ botToken: config.botToken, chatId: config.chatId, text });
+    processQueue();
 }
 
 export async function testTelegramConfig(botToken, chatId) {

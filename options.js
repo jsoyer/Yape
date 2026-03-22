@@ -32,12 +32,10 @@ const httpWarning = document.getElementById('httpWarning');
 let loginFailures = 0;
 let loginLockedUntil = 0;
 
-function loadLoginRateLimit(callback) {
-    chrome.storage.session.get(['loginFailures', 'loginLockedUntil'], function(data) {
-        loginFailures = data.loginFailures || 0;
-        loginLockedUntil = data.loginLockedUntil || 0;
-        if (callback) callback();
-    });
+async function loadLoginRateLimit() {
+    const data = await chrome.storage.session.get(['loginFailures', 'loginLockedUntil']);
+    loginFailures = data.loginFailures ?? 0;
+    loginLockedUntil = data.loginLockedUntil ?? 0;
 }
 
 function saveLoginRateLimit() {
@@ -78,32 +76,31 @@ function getProtocol() {
     return useHTTPSInput.checked ? 'https' : 'http';
 }
 
-function updateLoggedInStatus(callback) {
+async function updateLoggedInStatus(callback) {
     saveButton.disabled = true;
     loginStatusOKDiv.hidden = true;
     loginStatusKODiv.hidden = true;
     loginButton.hidden = true;
     enableSpinner();
-    isLoggedIn(function(loggedIn, unauthorized, error) {
-        disableSpinner();
-        loginStatusOKDiv.hidden = !loggedIn;
-        loginStatusKODiv.hidden = loggedIn;
-        loginStatusKODiv.textContent = '';
-        const errIcon = document.createElement('i');
-        errIcon.className = 'fa fa-times small me-3';
-        loginStatusKODiv.appendChild(errIcon);
-        const msgSpan = document.createElement('span');
-        if (!loggedIn && unauthorized) {
-            msgSpan.textContent = msg('optionsPleaseLogIn');
-        } else {
-            msgSpan.textContent = error ? error : msg('optionsNotLoggedIn');
-        }
-        loginStatusKODiv.appendChild(msgSpan);
-        loginButton.hidden = !unauthorized;
-        saveButton.disabled = false;
-        if (loggedIn) loadAccounts();
-        if (callback) callback();
-    });
+    const { success: loggedIn, unauthorized, error } = await isLoggedIn();
+    disableSpinner();
+    loginStatusOKDiv.hidden = !loggedIn;
+    loginStatusKODiv.hidden = loggedIn;
+    loginStatusKODiv.textContent = '';
+    const errIcon = document.createElement('i');
+    errIcon.className = 'fa fa-times small me-3';
+    loginStatusKODiv.appendChild(errIcon);
+    const msgSpan = document.createElement('span');
+    if (!loggedIn && unauthorized) {
+        msgSpan.textContent = msg('optionsPleaseLogIn');
+    } else {
+        msgSpan.textContent = error ? error : msg('optionsNotLoggedIn');
+    }
+    loginStatusKODiv.appendChild(msgSpan);
+    loginButton.hidden = !unauthorized;
+    saveButton.disabled = false;
+    if (loggedIn) loadAccounts();
+    if (callback) callback();
 }
 
 function requestPermission(callback) {
@@ -194,15 +191,14 @@ function updateCurrentURL() {
     currentURL.textContent = `${useHTTPSInput.checked ? 'https' : 'http'}://${serverIpInput.value}${portString}${serverPathInput.value}`;
 }
 
-saveButton.onclick = function(ev) {
-    setOrigin(serverIpInput.value, serverPortInput.value, getProtocol(), serverPathInput.value, serverNameInput.value.trim() || 'Default', function() {
-        requestPermission(function() {
-            renderServerList();
-            updateLoggedInStatus(function() {
-                if (!loginButton.hidden) {
-                    loginButton.click();
-                }
-            });
+saveButton.onclick = async function(ev) {
+    await setOrigin(serverIpInput.value, serverPortInput.value, getProtocol(), serverPathInput.value, serverNameInput.value.trim() || 'Default');
+    requestPermission(function() {
+        renderServerList();
+        updateLoggedInStatus(function() {
+            if (!loginButton.hidden) {
+                loginButton.click();
+            }
         });
     });
 };
@@ -217,7 +213,7 @@ rememberCredentials.onchange = function() {
     rememberWarning.hidden = !rememberCredentials.checked;
 }
 
-loginButtonModal.onclick = function(ev) {
+loginButtonModal.onclick = async function(ev) {
     const now = Date.now();
     if (now < loginLockedUntil) {
         const secs = Math.ceil((loginLockedUntil - now) / 1000);
@@ -225,26 +221,25 @@ loginButtonModal.onclick = function(ev) {
         return;
     }
     setDangerMessage('');
-    login(usernameInput.value, passwordInput.value, rememberCredentials.checked, function(success, error_msg) {
-        if (success) {
-            loginFailures = 0;
-            loginLockedUntil = 0;
+    const { success, error: error_msg } = await login(usernameInput.value, passwordInput.value, rememberCredentials.checked);
+    if (success) {
+        loginFailures = 0;
+        loginLockedUntil = 0;
+        saveLoginRateLimit();
+        if (loginModalInstance) loginModalInstance.hide();
+        updateLoggedInStatus();
+    } else {
+        loginFailures++;
+        if (loginFailures >= 3) {
+            const lockSecs = Math.min(30 * Math.pow(2, loginFailures - 3), 300);
+            loginLockedUntil = Date.now() + lockSecs * 1000;
             saveLoginRateLimit();
-            if (loginModalInstance) loginModalInstance.hide();
-            updateLoggedInStatus();
+            setDangerMessage(msg('optionsTooManyAttempts', [String(lockSecs)]), 0);
         } else {
-            loginFailures++;
-            if (loginFailures >= 3) {
-                const lockSecs = Math.min(30 * Math.pow(2, loginFailures - 3), 300);
-                loginLockedUntil = Date.now() + lockSecs * 1000;
-                saveLoginRateLimit();
-                setDangerMessage(msg('optionsTooManyAttempts', [String(lockSecs)]), 0);
-            } else {
-                saveLoginRateLimit();
-                setDangerMessage(error_msg, 0);
-            }
+            saveLoginRateLimit();
+            setDangerMessage(error_msg, 0);
         }
-    });
+    }
 }
 
 // --- Server Management ---
@@ -274,29 +269,25 @@ function renderServerList() {
         activateBtn.className = 'btn btn-sm btn-outline-primary py-0 px-1';
         activateBtn.textContent = msg('optionsActivate');
         activateBtn.hidden = s.id === activeServerId;
-        activateBtn.onclick = function() {
-            setActiveServer(s.id, function() {
-                pullStoredData(function() {
-                    renderServerList();
-                    updateForm();
-                    updateLoggedInStatus();
-                });
-            });
+        activateBtn.onclick = async function() {
+            await setActiveServer(s.id);
+            await pullStoredData();
+            renderServerList();
+            updateForm();
+            updateLoggedInStatus();
         };
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
         deleteBtn.textContent = msg('optionsDelete');
         deleteBtn.disabled = false;
-        deleteBtn.onclick = function() {
+        deleteBtn.onclick = async function() {
             if (!confirm(msg('optionsConfirmDeleteServer'))) return;
-            removeServer(s.id, function() {
-                pullStoredData(function() {
-                    renderServerList();
-                    updateForm();
-                    updateLoggedInStatus();
-                });
-            });
+            await removeServer(s.id);
+            await pullStoredData();
+            renderServerList();
+            updateForm();
+            updateLoggedInStatus();
         };
 
         row.appendChild(badge);
@@ -316,7 +307,7 @@ function updateForm() {
     updateCurrentURL();
 }
 
-addServerButton.onclick = function() {
+addServerButton.onclick = async function() {
     const config = {
         name: serverNameInput.value.trim() || msg('optionsNewServer'),
         serverIp: serverIpInput.value.trim() || 'localhost',
@@ -324,15 +315,12 @@ addServerButton.onclick = function() {
         serverProtocol: getProtocol(),
         serverPath: serverPathInput.value || '/'
     };
-    addServer(config, function(s) {
-        setActiveServer(s.id, function() {
-            pullStoredData(function() {
-                renderServerList();
-                updateForm();
-                updateLoggedInStatus();
-            });
-        });
-    });
+    const s = await addServer(config);
+    await setActiveServer(s.id);
+    await pullStoredData();
+    renderServerList();
+    updateForm();
+    updateLoggedInStatus();
 };
 
 // --- Hoster Accounts ---
@@ -358,55 +346,55 @@ function renderAccounts(accounts) {
         accountsDiv.appendChild(empty);
         return;
     }
-    entries.forEach(function(acc) {
+    entries.forEach(function({ plugin, login: accLogin, valid }) {
         const row = document.createElement('div');
         row.className = 'd-flex align-items-center gap-2 mb-1';
 
         const badge = document.createElement('span');
-        badge.className = `badge ${acc.valid ? 'bg-success' : 'bg-danger'}`;
-        badge.textContent = acc.valid ? msg('optionsValid') : msg('optionsInvalid');
+        badge.className = `badge ${valid ? 'bg-success' : 'bg-danger'}`;
+        badge.textContent = valid ? msg('optionsValid') : msg('optionsInvalid');
 
         const label = document.createElement('span');
         label.className = 'flex-grow-1';
-        label.textContent = `${acc.plugin} — ${acc.login}`;
+        label.textContent = `${plugin} — ${accLogin}`;
 
         const testBtn = document.createElement('button');
         testBtn.className = 'btn btn-sm btn-outline-primary py-0 px-1';
         testBtn.textContent = msg('optionsTestAccount');
-        testBtn.onclick = function() {
+        testBtn.onclick = async function() {
             testBtn.disabled = true;
             testBtn.textContent = '';
             const spin = document.createElement('span');
             spin.className = 'spinner-border spinner-border-sm';
             testBtn.appendChild(spin);
-            getAccounts(function(refreshed) {
-                testBtn.disabled = false;
-                testBtn.textContent = msg('optionsTestAccount');
-                const list = refreshed[acc.plugin] || [];
-                const found = list.find(function(a) { return a.login === acc.login; });
-                if (found && found.valid) {
-                    badge.className = 'badge bg-success';
-                    badge.textContent = msg('optionsValid');
-                    accountSuccess.textContent = msg('optionsAccountValid');
-                    accountSuccess.hidden = false;
-                    accountFeedback.hidden = true;
-                } else {
-                    badge.className = 'badge bg-danger';
-                    badge.textContent = msg('optionsInvalid');
-                    accountFeedback.textContent = msg('optionsAccountInvalid');
-                    accountFeedback.hidden = false;
-                    accountSuccess.hidden = true;
-                }
-            }, true);
+            const refreshed = await getAccounts(true);
+            testBtn.disabled = false;
+            testBtn.textContent = msg('optionsTestAccount');
+            const list = refreshed[plugin] || [];
+            const found = list.find(function(a) { return a.login === accLogin; });
+            if (found && found.valid) {
+                badge.className = 'badge bg-success';
+                badge.textContent = msg('optionsValid');
+                accountSuccess.textContent = msg('optionsAccountValid');
+                accountSuccess.hidden = false;
+                accountFeedback.hidden = true;
+            } else {
+                badge.className = 'badge bg-danger';
+                badge.textContent = msg('optionsInvalid');
+                accountFeedback.textContent = msg('optionsAccountInvalid');
+                accountFeedback.hidden = false;
+                accountSuccess.hidden = true;
+            }
         };
 
         const removeBtn = document.createElement('button');
         removeBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
         removeBtn.textContent = msg('optionsRemove');
-        removeBtn.onclick = function() {
+        removeBtn.onclick = async function() {
             if (!confirm(msg('optionsConfirmDeleteAccount'))) return;
             removeBtn.disabled = true;
-            removeAccount(acc.plugin, acc.login, function() { loadAccounts(); });
+            await removeAccount(plugin, accLogin);
+            loadAccounts();
         };
 
         row.appendChild(badge);
@@ -417,16 +405,17 @@ function renderAccounts(accounts) {
     });
 }
 
-function loadAccounts() {
+async function loadAccounts() {
     accountsDiv.textContent = '';
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'text-muted text-center';
     loadingDiv.textContent = msg('optionsLoading');
     accountsDiv.appendChild(loadingDiv);
-    getAccounts(function(accounts) { renderAccounts(accounts); });
+    const accounts = await getAccounts();
+    renderAccounts(accounts);
 }
 
-addAccountButton.onclick = function() {
+addAccountButton.onclick = async function() {
     const plugin = accountPlugin.value.trim();
     const login = accountLogin.value.trim();
     const password = accountPassword.value;
@@ -438,20 +427,19 @@ addAccountButton.onclick = function() {
         return;
     }
     addAccountButton.disabled = true;
-    updateAccount(plugin, login, password, function(ok) {
-        addAccountButton.disabled = false;
-        if (ok) {
-            accountPlugin.value = '';
-            accountLogin.value = '';
-            accountPassword.value = '';
-            accountSuccess.textContent = msg('optionsAccountAdded');
-            accountSuccess.hidden = false;
-            loadAccounts();
-        } else {
-            accountFeedback.textContent = msg('optionsAccountFailed');
-            accountFeedback.hidden = false;
-        }
-    });
+    const ok = await updateAccount(plugin, login, password);
+    addAccountButton.disabled = false;
+    if (ok) {
+        accountPlugin.value = '';
+        accountLogin.value = '';
+        accountPassword.value = '';
+        accountSuccess.textContent = msg('optionsAccountAdded');
+        accountSuccess.hidden = false;
+        loadAccounts();
+    } else {
+        accountFeedback.textContent = msg('optionsAccountFailed');
+        accountFeedback.hidden = false;
+    }
 };
 
 // --- Log Viewer ---
@@ -497,15 +485,14 @@ function renderLogPage() {
     logPagination.hidden = totalPages <= 1;
 }
 
-loadLogButton.onclick = function() {
+loadLogButton.onclick = async function() {
     loadLogButton.disabled = true;
-    getLog(0, function(lines) {
-        loadLogButton.disabled = false;
-        logAllLines = lines || [];
-        logCurrentPage = 0;
-        logControls.hidden = false;
-        renderLogPage();
-    });
+    const lines = await getLog(0);
+    loadLogButton.disabled = false;
+    logAllLines = lines || [];
+    logCurrentPage = 0;
+    logControls.hidden = false;
+    renderLogPage();
 };
 
 logSearchInput.oninput = function() { logCurrentPage = 0; renderLogPage(); };
@@ -554,25 +541,23 @@ function readTelegramForm() {
     };
 }
 
-function loadTelegramConfig() {
-    getTelegramConfig(function(config) {
-        telegramEnabled.checked = config.enabled;
-        telegramBotToken.value = config.botToken;
-        telegramChatId.value = config.chatId;
-        document.querySelectorAll('.telegram-event').forEach(function(cb) {
-            if (config.events.hasOwnProperty(cb.dataset.event)) {
-                cb.checked = config.events[cb.dataset.event];
-            }
-        });
+async function loadTelegramConfig() {
+    const config = await getTelegramConfig();
+    telegramEnabled.checked = config.enabled;
+    telegramBotToken.value = config.botToken;
+    telegramChatId.value = config.chatId;
+    document.querySelectorAll('.telegram-event').forEach(function(cb) {
+        if (Object.hasOwn(config.events, cb.dataset.event)) {
+            cb.checked = config.events[cb.dataset.event];
+        }
     });
 }
 
-telegramSaveBtn.onclick = function() {
+telegramSaveBtn.onclick = async function() {
     telegramSaveBtn.disabled = true;
-    setTelegramConfig(readTelegramForm(), function() {
-        telegramSaveBtn.disabled = false;
-        showTelegramFeedback(msg('optionsTelegramSaved'), false);
-    });
+    await setTelegramConfig(readTelegramForm());
+    telegramSaveBtn.disabled = false;
+    showTelegramFeedback(msg('optionsTelegramSaved'), false);
 };
 
 telegramTestBtn.onclick = async function() {
@@ -592,8 +577,9 @@ telegramTestBtn.onclick = async function() {
     }
 };
 
-loadLoginRateLimit();
-pullStoredData(async function() {
+(async function() {
+    await loadLoginRateLimit();
+    await pullStoredData();
     await initLocale();
     localeSelect.value = getLocale();
     applyI18n();
@@ -606,11 +592,10 @@ pullStoredData(async function() {
     useHTTPSInput.oninput = requireSaving;
     serverPathInput.oninput = requireSaving;
 
-    isAutoRetryEnabled(function(enabled) {
-        autoRetryToggle.checked = enabled;
-    });
+    const enabled = await isAutoRetryEnabled();
+    autoRetryToggle.checked = enabled;
 
-    loadTelegramConfig();
+    await loadTelegramConfig();
 
     updateLoggedInStatus(function() {
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
@@ -622,4 +607,4 @@ pullStoredData(async function() {
     document.getElementById('password').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') document.getElementById('loginButtonModal').click();
     });
-});
+})();

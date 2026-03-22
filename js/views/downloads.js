@@ -33,9 +33,10 @@ function buildDownloadItem(download, onRefresh) {
     stopBtn.title = msg('ariaStop');
     stopBtn.setAttribute('aria-label', msg('ariaStop'));
     setIcon(stopBtn, 'fa fa-stop');
-    stopBtn.onclick = function() {
+    stopBtn.onclick = async function() {
         stopBtn.disabled = true;
-        stopDownload(download.fid, function() { onRefresh(); });
+        await stopDownload(download.fid);
+        onRefresh();
     };
 
     const restartBtn = document.createElement('button');
@@ -43,9 +44,10 @@ function buildDownloadItem(download, onRefresh) {
     restartBtn.title = msg('ariaRestart');
     restartBtn.setAttribute('aria-label', msg('ariaRestart'));
     setIcon(restartBtn, 'fa fa-redo');
-    restartBtn.onclick = function() {
+    restartBtn.onclick = async function() {
         restartBtn.disabled = true;
-        restartFile(download.fid, function() { onRefresh(); });
+        await restartFile(download.fid);
+        onRefresh();
     };
 
     const delBtn = document.createElement('button');
@@ -53,9 +55,10 @@ function buildDownloadItem(download, onRefresh) {
     delBtn.title = msg('ariaDeletePackage');
     delBtn.setAttribute('aria-label', msg('ariaDeletePackage'));
     setIcon(delBtn, 'fa fa-trash');
-    delBtn.onclick = function() {
+    delBtn.onclick = async function() {
         delBtn.disabled = true;
-        deletePackage(download.packageID, function() { onRefresh(); });
+        await deletePackage(download.packageID);
+        onRefresh();
     };
 
     rightDiv.appendChild(etaSpan);
@@ -84,45 +87,44 @@ function buildDownloadItem(download, onRefresh) {
     return wrapper;
 }
 
-export function updateStatusDownloads(searchTerm, statusFilterValue, activeView, onCaptchaUpdate) {
-    getStatusDownloads(function(status) {
-        let totalSpeed = 0;
-        statusDiv.textContent = '';
+export async function updateStatusDownloads(searchTerm, statusFilterValue, activeView, onCaptchaUpdate) {
+    const status = await getStatusDownloads();
+    let totalSpeed = 0;
+    statusDiv.textContent = '';
 
-        let filtered = searchTerm
-            ? status.filter(d => d.name.toLowerCase().includes(searchTerm))
-            : status;
-        if (statusFilterValue) {
-            filtered = filtered.filter(d => (d.statusmsg || '').toLowerCase() === statusFilterValue);
-        }
+    let filtered = searchTerm
+        ? status.filter(d => d.name?.toLowerCase().includes(searchTerm))
+        : status;
+    if (statusFilterValue) {
+        filtered = filtered.filter(d => (d.statusmsg ?? '').toLowerCase() === statusFilterValue);
+    }
 
-        if (filtered.length === 0) {
-            const empty = document.createElement('div');
-            empty.className = 'text-center m-4 text-muted';
-            empty.textContent = msg('popupNoActiveDownloads');
-            statusDiv.appendChild(empty);
-        } else {
-            filtered.forEach(function(download) {
-                totalSpeed += download.speed;
-                statusDiv.appendChild(buildDownloadItem(download, function() {
-                    updateStatusDownloads(searchTerm, statusFilterValue, activeView, onCaptchaUpdate);
-                }));
-            });
-        }
-
-        totalSpeedDiv.textContent = totalSpeed > 0
-            ? `- ${(totalSpeed / (1000 * 1000)).toFixed(2)} MB/s`
-            : '';
-
-        // Global queue ETA: max of all individual ETAs
-        let maxEta = 0;
-        status.forEach(function(download) {
-            const s = parseEtaSeconds(download.format_eta);
-            if (s > maxEta) maxEta = s;
+    if (filtered.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'text-center m-4 text-muted';
+        empty.textContent = msg('popupNoActiveDownloads');
+        statusDiv.appendChild(empty);
+    } else {
+        filtered.forEach(function(download) {
+            totalSpeed += download.speed;
+            statusDiv.appendChild(buildDownloadItem(download, function() {
+                updateStatusDownloads(searchTerm, statusFilterValue, activeView, onCaptchaUpdate);
+            }));
         });
-        queueEtaSpan.textContent = totalSpeed > 0 ? formatEta(maxEta, msg) : '';
+    }
 
-        if (activeView === 'downloads') actionButtons.hidden = false;
-        if (onCaptchaUpdate) onCaptchaUpdate();
+    totalSpeedDiv.textContent = totalSpeed > 0
+        ? `- ${(totalSpeed / (1000 * 1000)).toFixed(2)} MB/s`
+        : '';
+
+    // Global queue ETA: max of all individual ETAs
+    let maxEta = 0;
+    status.forEach(function(download) {
+        const s = parseEtaSeconds(download.format_eta);
+        if (s > maxEta) maxEta = s;
     });
+    queueEtaSpan.textContent = totalSpeed > 0 ? formatEta(maxEta, msg) : '';
+
+    if (activeView === 'downloads') actionButtons.hidden = false;
+    if (onCaptchaUpdate) onCaptchaUpdate();
 }
