@@ -87,7 +87,10 @@ function updateLoggedInStatus(callback) {
         disableSpinner();
         loginStatusOKDiv.hidden = !loggedIn;
         loginStatusKODiv.hidden = loggedIn;
-        loginStatusKODiv.innerHTML = `<i class="fa fa-times small me-3"></i>`;
+        loginStatusKODiv.textContent = '';
+        const errIcon = document.createElement('i');
+        errIcon.className = 'fa fa-times small me-3';
+        loginStatusKODiv.appendChild(errIcon);
         const msgSpan = document.createElement('span');
         if (!loggedIn && unauthorized) {
             msgSpan.textContent = msg('optionsPleaseLogIn');
@@ -371,7 +374,10 @@ function renderAccounts(accounts) {
         testBtn.textContent = msg('optionsTestAccount');
         testBtn.onclick = function() {
             testBtn.disabled = true;
-            testBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            testBtn.textContent = '';
+            const spin = document.createElement('span');
+            spin.className = 'spinner-border spinner-border-sm';
+            testBtn.appendChild(spin);
             getAccounts(function(refreshed) {
                 testBtn.disabled = false;
                 testBtn.textContent = msg('optionsTestAccount');
@@ -570,7 +576,10 @@ telegramSaveBtn.onclick = function() {
 
 telegramTestBtn.onclick = async function() {
     telegramTestBtn.disabled = true;
-    telegramTestBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    telegramTestBtn.textContent = '';
+    const tgSpin = document.createElement('span');
+    tgSpin.className = 'spinner-border spinner-border-sm';
+    telegramTestBtn.appendChild(tgSpin);
     const form = readTelegramForm();
     const result = await testTelegramConfig(form.botToken, form.chatId);
     telegramTestBtn.disabled = false;
