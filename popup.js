@@ -177,14 +177,14 @@ async function updateCaptchaAlert() {
 
 async function updateFreeSpace() {
     const bytes = await freeSpace();
-    if (bytes == null) return;
+    if (bytes === null || bytes === undefined) return;
     freeSpaceDiv.textContent = msg('popupFreeSpace', [formatBytes(bytes)]);
     freeSpaceDiv.hidden = false;
 }
 
 async function updateServerVersion() {
     const version = await getServerVersion();
-    if (version == null) return;
+    if (version === null || version === undefined) return;
     serverVersionDiv.textContent = `PyLoad ${version}`;
     serverVersionDiv.hidden = false;
 }
