@@ -218,6 +218,21 @@
   "optionsLoginRequired": {
     "message": "La connexion au serveur PyLoad est requise."
   },
+  "optionsAuthHeading": {
+    "message": "Authentification"
+  },
+  "optionsAuthDesc": {
+    "message": "Saisissez vos identifiants par serveur puis connectez-vous juste après l'enregistrement."
+  },
+  "optionsAuthMethod": {
+    "message": "M\u00e9thode d'authentification"
+  },
+  "optionsAuthMethodBasic": {
+    "message": "Identifiant et mot de passe"
+  },
+  "optionsAuthMethodApi": {
+    "message": "Cl\u00e9 API"
+  },
   "optionsUsername": {
     "message": "Nom d'utilisateur"
   },
@@ -230,8 +245,29 @@
   "optionsRememberWarning": {
     "message": "Les identifiants seront enregistr\u00e9s sur cet appareil."
   },
+  "optionsApiKeyLabel": {
+    "message": "Cl\u00e9 API"
+  },
+  "optionsApiKeyPlaceholder": {
+    "message": "pl_xxxxx"
+  },
+  "optionsApiKeyHelp": {
+    "message": "G\u00e9n\u00e9rez-en une via PyLoad > Param\u00e8tres > API Keys."
+  },
+  "optionsLoginMissingBasic": {
+    "message": "Veuillez saisir un identifiant et un mot de passe."
+  },
+  "optionsLoginMissingKey": {
+    "message": "Veuillez saisir une cl\u00e9 API valide."
+  },
+  "optionsApiKeyInvalid": {
+    "message": "Les cl\u00e9s API PyLoad commencent par \"pl_\"."
+  },
   "optionsHttpWarning": {
-    "message": "Attention : HTTP s\u00e9lectionn\u00e9. Les identifiants seront transmis en clair."
+    "message": "Attention : HTTP s\u00e9lectionn\u00e9. Les donn\u00e9es d'authentification seront transmises en clair."
+  },
+  "optionsReconnect": {
+    "message": "Reconnecter"
   },
   "optionsCancel": {
     "message": "Annuler"
@@ -253,6 +289,12 @@
   },
   "optionsActivate": {
     "message": "Activer"
+  },
+  "optionsDuplicate": {
+    "message": "Dupliquer"
+  },
+  "optionsCopySuffix": {
+    "message": "copie"
   },
   "optionsNewServer": {
     "message": "Nouveau serveur"

@@ -1,4 +1,4 @@
-import { pullStoredData, setOrigin, origin, serverIp, serverPort, serverProtocol, serverPath, servers, activeServerId, addServer, removeServer, setActiveServer, isAutoRetryEnabled, setAutoRetryEnabled, getTelegramConfig, setTelegramConfig, getDiscordConfig, setDiscordConfig, getNtfyConfig, setNtfyConfig } from './js/storage.js';
+import { pullStoredData, setOrigin, origin, serverIp, serverPort, serverProtocol, serverPath, servers, activeServerId, addServer, removeServer, setActiveServer, isAutoRetryEnabled, setAutoRetryEnabled, getTelegramConfig, setTelegramConfig, getDiscordConfig, setDiscordConfig, getNtfyConfig, setNtfyConfig, getAuthMode, setCredentials } from './js/storage.js';
 import { getThemeMode, setThemeMode } from './js/theme-api.js';
 import { FEEDBACK_TIMEOUT } from './js/constants.js';
 import { login, isLoggedIn, abortServerStatus, getAccounts, updateAccount, removeAccount, getLog } from './js/pyload-api.js';
@@ -14,6 +14,7 @@ const serverListDiv = document.getElementById('serverListDiv');
 const addServerButton = document.getElementById('addServerButton');
 const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
+const apiKeyInput = document.getElementById('apiKeyInput');
 const serverIpInput = document.getElementById('serverIp');
 const serverPortInput = document.getElementById('serverPort');
 const serverPathInput = document.getElementById('serverPath');
@@ -25,12 +26,13 @@ const currentURL = document.getElementById('currentURL');
 
 const saveButton = document.getElementById('saveButton');
 const loginButton = document.getElementById('loginButton');
-const loginButtonModal = document.getElementById('loginButtonModal');
 const alertDanger = document.getElementById('alertDanger');
 const rememberCredentials = document.getElementById('rememberCredentials');
 const rememberWarning = document.getElementById('rememberWarning');
-let loginModalInstance = null;
 const httpWarning = document.getElementById('httpWarning');
+const authModeRadios = document.querySelectorAll('input[name="authMode"]');
+const basicAuthFields = document.getElementById('basicAuthFields');
+const apiKeyField = document.getElementById('apiKeyField');
 
 let loginFailures = 0;
 let loginLockedUntil = 0;
@@ -44,6 +46,49 @@ async function loadLoginRateLimit() {
 function saveLoginRateLimit() {
     chrome.storage.session.set({ loginFailures, loginLockedUntil });
 }
+
+async function wipeCredentialsAndInputs() {
+    await setCredentials(null, false);
+    usernameInput.value = '';
+    passwordInput.value = '';
+    apiKeyInput.value = '';
+    setDangerMessage('');
+}
+
+function focusAuthInput() {
+    if (getSelectedAuthMode() === 'apiKey') {
+        apiKeyInput.focus();
+    } else {
+        usernameInput.focus();
+    }
+}
+
+function getSelectedAuthMode() {
+    const checked = document.querySelector('input[name="authMode"]:checked');
+    return checked ? checked.value : 'basic';
+}
+
+function applyAuthMode(mode) {
+    const value = mode === 'apiKey' ? 'apiKey' : 'basic';
+    authModeRadios.forEach(function(radio) {
+        radio.checked = radio.value === value;
+    });
+    const activeEl = document.activeElement;
+    const hidingBasic = value === 'apiKey';
+    basicAuthFields.hidden = hidingBasic;
+    apiKeyField.hidden = !hidingBasic;
+    if (hidingBasic) {
+        if (basicAuthFields.contains(activeEl)) apiKeyInput.focus();
+    } else if (apiKeyField.contains(activeEl)) {
+        usernameInput.focus();
+    }
+}
+
+authModeRadios.forEach(function(radio) {
+    radio.addEventListener('change', function() {
+        applyAuthMode(radio.value);
+    });
+});
 
 
 function enableSpinner() {
@@ -81,7 +126,6 @@ async function updateLoggedInStatus(callback) {
     saveButton.disabled = true;
     loginStatusOKDiv.hidden = true;
     loginStatusKODiv.hidden = true;
-    loginButton.hidden = true;
     enableSpinner();
     const { success: loggedIn, unauthorized, error } = await isLoggedIn();
     disableSpinner();
@@ -98,10 +142,21 @@ async function updateLoggedInStatus(callback) {
         msgSpan.textContent = error ? error : msg('optionsNotLoggedIn');
     }
     loginStatusKODiv.appendChild(msgSpan);
-    loginButton.hidden = !unauthorized;
+    loginButton.disabled = false;
+    if (loggedIn) {
+        loginButton.textContent = msg('optionsReconnect');
+        loginButton.classList.remove('btn-primary');
+        loginButton.classList.add('btn-outline-secondary');
+    } else {
+        loginButton.textContent = msg('optionsLogin');
+        loginButton.classList.add('btn-primary');
+        loginButton.classList.remove('btn-outline-secondary');
+    }
     saveButton.disabled = false;
     if (loggedIn) loadAccounts();
-    if (callback) callback();
+    const state = { success: loggedIn, unauthorized, error };
+    if (callback) callback(state);
+    return state;
 }
 
 function requestPermission(callback) {
@@ -178,7 +233,6 @@ function requireSaving() {
         saveButton.disabled = false;
         loginStatusOKDiv.hidden = true;
         loginStatusKODiv.hidden = true;
-        loginButton.hidden = true;
     }
     validateForm();
 }
@@ -193,28 +247,21 @@ function updateCurrentURL() {
 }
 
 saveButton.onclick = async function(ev) {
+    const selectedMode = getSelectedAuthMode();
     await setOrigin(serverIpInput.value, serverPortInput.value, getProtocol(), serverPathInput.value, serverNameInput.value.trim() || 'Default');
-    requestPermission(function() {
+    await wipeCredentialsAndInputs();
+    applyAuthMode(selectedMode);
+    requestPermission(async function() {
         renderServerList();
-        updateLoggedInStatus(function() {
-            if (!loginButton.hidden) {
-                loginButton.click();
-            }
-        });
+        const status = await updateLoggedInStatus();
+        if (!status.success) {
+            focusAuthInput();
+        }
     });
 };
 
-loginButton.onclick = function(ev) {
+loginButton.onclick = async function() {
     rememberWarning.hidden = !rememberCredentials.checked;
-    loginModalInstance = new bootstrap.Modal(document.getElementById('loginModal'));
-    loginModalInstance.show();
-}
-
-rememberCredentials.onchange = function() {
-    rememberWarning.hidden = !rememberCredentials.checked;
-}
-
-loginButtonModal.onclick = async function(ev) {
     const now = Date.now();
     if (now < loginLockedUntil) {
         const secs = Math.ceil((loginLockedUntil - now) / 1000);
@@ -222,13 +269,38 @@ loginButtonModal.onclick = async function(ev) {
         return;
     }
     setDangerMessage('');
-    const { success, error: error_msg } = await login(usernameInput.value, passwordInput.value, rememberCredentials.checked);
+    const mode = getSelectedAuthMode();
+    let credentials = null;
+    if (mode === 'apiKey') {
+        const key = apiKeyInput.value.trim();
+        if (!key) {
+            setDangerMessage(msg('optionsLoginMissingKey'), 0);
+            apiKeyInput.focus();
+            return;
+        }
+        if (!key.startsWith('pl_')) {
+            setDangerMessage(msg('optionsApiKeyInvalid'), 0);
+            apiKeyInput.focus();
+            return;
+        }
+        credentials = { mode: 'apiKey', apiKey: key };
+    } else {
+        const user = usernameInput.value.trim();
+        const pass = passwordInput.value;
+        if (!user || !pass) {
+            setDangerMessage(msg('optionsLoginMissingBasic'), 0);
+            focusAuthInput();
+            return;
+        }
+        credentials = { mode: 'basic', username: user, password: pass };
+    }
+    loginButton.disabled = true;
+    const { success, error: error_msg } = await login(credentials, rememberCredentials.checked);
+    loginButton.disabled = false;
     if (success) {
         loginFailures = 0;
         loginLockedUntil = 0;
         saveLoginRateLimit();
-        if (loginModalInstance) loginModalInstance.hide();
-        updateLoggedInStatus();
     } else {
         loginFailures++;
         if (loginFailures >= 3) {
@@ -241,6 +313,11 @@ loginButtonModal.onclick = async function(ev) {
             setDangerMessage(error_msg, 0);
         }
     }
+    await updateLoggedInStatus();
+}
+
+rememberCredentials.onchange = function() {
+    rememberWarning.hidden = !rememberCredentials.checked;
 }
 
 // --- Server Management ---
@@ -266,7 +343,31 @@ function buildServerRow(s) {
         await pullStoredData();
         renderServerList();
         updateForm();
-        updateLoggedInStatus();
+        applyAuthMode(getAuthMode());
+        await updateLoggedInStatus();
+    };
+
+    const duplicateBtn = document.createElement('button');
+    duplicateBtn.className = 'btn btn-sm btn-outline-secondary py-0 px-1';
+    duplicateBtn.textContent = msg('optionsDuplicate');
+    duplicateBtn.onclick = async function() {
+        const previousMode = getSelectedAuthMode();
+        const copyName = `${s.name} (${msg('optionsCopySuffix')})`;
+        const clone = await addServer({
+            name: copyName,
+            serverIp: s.serverIp,
+            serverPort: s.serverPort,
+            serverProtocol: s.serverProtocol,
+            serverPath: s.serverPath
+        });
+        await setActiveServer(clone.id);
+        await wipeCredentialsAndInputs();
+        applyAuthMode(previousMode);
+        await pullStoredData();
+        renderServerList();
+        updateForm();
+        await updateLoggedInStatus();
+        focusAuthInput();
     };
 
     const deleteBtn = document.createElement('button');
@@ -278,12 +379,14 @@ function buildServerRow(s) {
         await pullStoredData();
         renderServerList();
         updateForm();
-        updateLoggedInStatus();
+        applyAuthMode(getAuthMode());
+        await updateLoggedInStatus();
     };
 
     row.appendChild(badge);
     row.appendChild(label);
     row.appendChild(activateBtn);
+    row.appendChild(duplicateBtn);
     row.appendChild(deleteBtn);
     return row;
 }
@@ -309,6 +412,7 @@ function updateForm() {
 }
 
 addServerButton.onclick = async function() {
+    const selectedMode = getSelectedAuthMode();
     const config = {
         name: serverNameInput.value.trim() || msg('optionsNewServer'),
         serverIp: serverIpInput.value.trim() || 'localhost',
@@ -318,10 +422,13 @@ addServerButton.onclick = async function() {
     };
     const s = await addServer(config);
     await setActiveServer(s.id);
+    await wipeCredentialsAndInputs();
+    applyAuthMode(selectedMode);
     await pullStoredData();
     renderServerList();
     updateForm();
-    updateLoggedInStatus();
+    await updateLoggedInStatus();
+    focusAuthInput();
 };
 
 // --- Hoster Accounts ---
@@ -709,12 +816,14 @@ ntfyTestBtn.onclick = async function() {
 (async function() {
     await loadLoginRateLimit();
     await pullStoredData();
+    applyAuthMode(getAuthMode());
     await initLocale();
     localeSelect.value = getLocale();
     themeSelect.value = await getThemeMode();
     applyI18n();
     renderServerList();
     updateForm();
+    rememberWarning.hidden = !rememberCredentials.checked;
 
     serverNameInput.oninput = requireSaving;
     serverIpInput.oninput = requireSaving;
@@ -729,14 +838,17 @@ ntfyTestBtn.onclick = async function() {
     await loadDiscordConfig();
     await loadNtfyConfig();
 
-    updateLoggedInStatus(function() {
+    await updateLoggedInStatus(function() {
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
     });
 
-    document.getElementById('username').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') document.getElementById('loginButtonModal').click();
+    usernameInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') loginButton.click();
     });
-    document.getElementById('password').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') document.getElementById('loginButtonModal').click();
+    passwordInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') loginButton.click();
+    });
+    apiKeyInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') loginButton.click();
     });
 })();

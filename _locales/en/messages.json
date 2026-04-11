@@ -308,6 +308,26 @@
     "message": "Login to PyLoad server is required.",
     "description": "Login modal body text"
   },
+  "optionsAuthHeading": {
+    "message": "Authentication",
+    "description": "Authentication section title"
+  },
+  "optionsAuthDesc": {
+    "message": "Enter your credentials per server and connect right after saving.",
+    "description": "Authentication section helper text"
+  },
+  "optionsAuthMethod": {
+    "message": "Authentication method",
+    "description": "Auth method label"
+  },
+  "optionsAuthMethodBasic": {
+    "message": "Username & password",
+    "description": "Basic auth radio label"
+  },
+  "optionsAuthMethodApi": {
+    "message": "API key",
+    "description": "API key radio label"
+  },
   "optionsUsername": {
     "message": "Username",
     "description": "Username label"
@@ -324,9 +344,37 @@
     "message": "Credentials will be saved to disk on this device.",
     "description": "Remember credentials warning"
   },
+  "optionsApiKeyLabel": {
+    "message": "API key",
+    "description": "API key label"
+  },
+  "optionsApiKeyPlaceholder": {
+    "message": "pl_xxxxx",
+    "description": "API key input placeholder"
+  },
+  "optionsApiKeyHelp": {
+    "message": "Generate one from PyLoad > Settings > API Keys.",
+    "description": "API key helper text"
+  },
+  "optionsLoginMissingBasic": {
+    "message": "Enter a username and password.",
+    "description": "Validation error for missing basic credentials"
+  },
+  "optionsLoginMissingKey": {
+    "message": "Enter a valid API key.",
+    "description": "Validation error for missing API key"
+  },
+  "optionsApiKeyInvalid": {
+    "message": "PyLoad API keys start with \"pl_\".",
+    "description": "Validation error for malformed API key"
+  },
   "optionsHttpWarning": {
-    "message": "Warning: HTTP selected. Credentials will be transmitted in cleartext.",
+    "message": "Warning: HTTP selected. Authentication data will be transmitted in cleartext.",
     "description": "HTTP cleartext warning"
+  },
+  "optionsReconnect": {
+    "message": "Reconnect",
+    "description": "Reconnect button label"
   },
   "optionsCancel": {
     "message": "Cancel",
@@ -358,6 +406,14 @@
   "optionsActivate": {
     "message": "Activate",
     "description": "Server activate button"
+  },
+  "optionsDuplicate": {
+    "message": "Duplicate",
+    "description": "Duplicate server button label"
+  },
+  "optionsCopySuffix": {
+    "message": "copy",
+    "description": "Suffix appended to duplicated server names"
   },
   "optionsNewServer": {
     "message": "New server",

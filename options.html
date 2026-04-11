@@ -80,6 +80,54 @@
               <i class="fa fa-times small me-3"></i><span data-i18n="optionsNotLoggedIn">You are not logged in</span>
             </div>
           </div>
+          <div class="border rounded p-3 mt-3">
+            <div class="d-flex flex-column flex-sm-row justify-content-between">
+              <div class="mb-2 mb-sm-0">
+                <div class="fw-bold" data-i18n="optionsAuthHeading">Authentication</div>
+                <div class="small text-muted" data-i18n="optionsAuthDesc">Save your host, then connect with either method.</div>
+              </div>
+              <button id="loginButton" class="btn btn-primary btn-sm align-self-start align-self-sm-center" data-i18n="optionsLogin">Login</button>
+            </div>
+            <div class="mb-3 mt-3">
+              <label class="form-label" data-i18n="optionsAuthMethod">Authentication method</label>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="authMode" id="authModeBasic" value="basic" checked>
+                <label class="form-check-label" for="authModeBasic" data-i18n="optionsAuthMethodBasic">Username &amp; password</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="authMode" id="authModeApiKey" value="apiKey">
+                <label class="form-check-label" for="authModeApiKey" data-i18n="optionsAuthMethodApi">API key</label>
+              </div>
+            </div>
+            <div id="basicAuthFields">
+              <div class="mb-3">
+                <label for="username" data-i18n="optionsUsername">Username</label>
+                <input type="text" class="form-control" id="username" autocomplete="username" maxlength="128">
+              </div>
+              <div class="mb-3">
+                <label for="password" data-i18n="optionsPassword">Password</label>
+                <input type="password" class="form-control" id="password" autocomplete="current-password" maxlength="128">
+              </div>
+            </div>
+            <div class="mb-3" id="apiKeyField" hidden>
+              <label for="apiKeyInput" data-i18n="optionsApiKeyLabel">API key</label>
+              <input type="password" class="form-control" id="apiKeyInput" autocomplete="off" data-i18n-placeholder="optionsApiKeyPlaceholder" placeholder="pl_xxxxx">
+              <div class="form-text small" data-i18n="optionsApiKeyHelp">Generate one from PyLoad &gt; Settings &gt; API Keys.</div>
+            </div>
+            <div class="form-check mb-2">
+              <input type="checkbox" class="form-check-input" id="rememberCredentials" checked>
+              <label class="form-check-label" for="rememberCredentials" data-i18n="optionsRemember">Remember credentials</label>
+            </div>
+            <div id="rememberWarning" class="alert alert-warning py-1 small" hidden data-i18n="optionsRememberWarning">
+              Credentials will be saved to disk on this device.
+            </div>
+            <div class="d-flex justify-content-center">
+              <div id="alertDanger" class="alert alert-danger m-2 py-1 px-2 small" hidden></div>
+            </div>
+            <div id="httpWarning" class="alert alert-warning mt-2 mb-0" style="display: none;" data-i18n="optionsHttpWarning">
+                Warning: HTTP selected. Authentication data will be transmitted in cleartext.
+            </div>
+          </div>
         </form>
         <div class="d-flex justify-content-center align-items-center" id="spinnerDiv">
           <span data-i18n="optionsLoading">Loading...</span>
@@ -87,7 +135,6 @@
         <div class="d-flex justify-content-center">
           <div class="m-2">
             <button id="saveButton" class="btn btn-primary m-1" data-i18n="optionsSave">Save</button>
-            <button id="loginButton" class="btn btn-primary m-1" hidden data-i18n="optionsLogin">Login</button>
           </div>
         </div>
         <div class="border rounded p-3 mt-4">
@@ -268,47 +315,6 @@
         </div>
       </div>
 
-    </div>
-  </div>
-
-  <div id="loginModal" class="modal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" data-i18n="optionsLoginTitle">Login</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" data-i18n-aria="ariaClose"></button>
-        </div>
-        <div class="modal-body">
-          <p data-i18n="optionsLoginRequired">Login to PyLoad server is required.</p>
-          <form>
-            <div class="mb-3">
-              <label for="username" data-i18n="optionsUsername">Username</label>
-              <input type="text" class="form-control" id="username" autocomplete="username" maxlength="128">
-            </div>
-            <div class="mb-3">
-              <label for="password" data-i18n="optionsPassword">Password</label>
-              <input type="password" class="form-control" id="password" autocomplete="current-password" maxlength="128">
-            </div>
-            <div class="form-check mb-2">
-              <input type="checkbox" class="form-check-input" id="rememberCredentials" checked>
-              <label class="form-check-label" for="rememberCredentials" data-i18n="optionsRemember">Remember credentials</label>
-            </div>
-            <div id="rememberWarning" class="alert alert-warning py-1 small" hidden data-i18n="optionsRememberWarning">
-              Credentials will be saved to disk on this device.
-            </div>
-            <div class="d-flex justify-content-center">
-              <div id="alertDanger" class="alert alert-danger m-2" hidden></div>
-            </div>
-          </form>
-          <div id="httpWarning" class="alert alert-warning mx-auto mt-3" style="max-width: 400px; display: none;" data-i18n="optionsHttpWarning">
-              Warning: HTTP selected. Credentials will be transmitted in cleartext.
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="optionsCancel">Cancel</button>
-          <button id="loginButtonModal" type="button" class="btn btn-primary" data-i18n="optionsLogin">Login</button>
-        </div>
-      </div>
     </div>
   </div>
 </body>

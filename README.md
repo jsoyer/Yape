@@ -2,7 +2,7 @@
 
 A powerful, privacy-first browser extension for managing [PyLoad](https://pyload.net) downloads — the spiritual successor to [Yape](https://github.com/RemiRigal/Yape), completely rewritten with Manifest V3. Available for Chrome, Chromium, Edge, and Firefox.
 
-**Current version:** 3.8.1 — Language selector, store listing refresh, documentation update.
+**Current version:** 3.9.0 — API key authentication, inline login flow, and context menu fixes.
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?logo=github)](https://github.com/sponsors/jsoyer)
 [![Ko-fi](https://img.shields.io/badge/Support-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/jsoyer)
@@ -104,6 +104,10 @@ A powerful, privacy-first browser extension for managing [PyLoad](https://pyload
 | "Remember credentials" enabled | Encrypted local storage (AES-GCM 256-bit) | Survives browser restart |
 
 Credentials are never synced across devices and are isolated per server.
+
+### API Key Authentication
+
+PyLoad's latest builds expose programmable API keys (prefixed with `pl_`). In the **Login** modal choose **API key**, paste the generated key from *PyLoad > Settings > API Keys*, and click **Login**. Yapee will send the key via the `X-API-Key` header for every request, so you no longer need to store a browser password. Proxy/HTTPS recommendations still apply—use HTTPS whenever possible since the key is transmitted alongside other API calls.
 
 ---
 

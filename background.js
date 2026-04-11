@@ -60,19 +60,32 @@ function getHosterDomains() {
     return [...domains];
 }
 
-chrome.runtime.onInstalled.addListener( () => {
-    chrome.contextMenus.create({
-        id: 'yape',
-        title: chrome.i18n.getMessage('bgContextMenu'),
-        contexts:['link']
+function registerContextMenus() {
+    chrome.contextMenus.removeAll(() => {
+        chrome.runtime.lastError; // ignore when nothing to remove
+        chrome.contextMenus.create({
+            id: 'yape',
+            title: chrome.i18n.getMessage('bgContextMenu'),
+            contexts: ['link']
+        }, () => { chrome.runtime.lastError; });
+        chrome.contextMenus.create({
+            id: 'yape-extract',
+            title: chrome.i18n.getMessage('bgExtractLinks'),
+            contexts: ['page']
+        }, () => { chrome.runtime.lastError; });
     });
-    chrome.contextMenus.create({
-        id: 'yape-extract',
-        title: chrome.i18n.getMessage('bgExtractLinks'),
-        contexts:['page']
-    });
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+    registerContextMenus();
     chrome.alarms.create('checkDownloads', { periodInMinutes: ALARM_PERIOD_MINUTES });
 });
+
+if (chrome.runtime.onStartup) {
+    chrome.runtime.onStartup.addListener(() => {
+        registerContextMenus();
+    });
+}
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId === 'yape') {

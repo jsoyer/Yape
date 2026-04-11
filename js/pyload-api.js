@@ -60,16 +60,16 @@ export async function getServerStatus() {
     }
 }
 
-export async function login(u, p, remember) {
-    await setCredentials(u, p, remember);
+export async function login(credentials, remember) {
+    await setCredentials(credentials, remember);
     const result = await getServerStatus();
     if (result.success) {
         return { success: true };
     } else if (result.unauthorized) {
-        await setCredentials('', '', false);
+        await setCredentials(null, false);
         return { success: false, error: 'Login failed, invalid credentials' };
     } else {
-        await setCredentials('', '', false);
+        await setCredentials(null, false);
         return { success: false, error: result.error || 'Login failed, server unreachable' };
     }
 }

@@ -9,7 +9,33 @@ export function buildOrigin(protocol, ip, port, path) {
 export let serverPort, serverIp, serverProtocol, serverPath, origin;
 export let servers = [];
 export let activeServerId = null;
-let username = '', password = '';
+let username = '';
+let password = '';
+let apiKey = '';
+let authMode = 'basic';
+
+const LEGACY_CREDENTIAL_KEYS = ['username', 'password', 'credentialsEncrypted'];
+
+function resetCredentialsState() {
+    username = '';
+    password = '';
+    apiKey = '';
+    authMode = 'basic';
+}
+
+function getCredentialPrefix() {
+    return activeServerId ? `creds_${activeServerId}` : 'creds_default';
+}
+
+function credentialKeys(prefix) {
+    return {
+        user: `${prefix}_user`,
+        pass: `${prefix}_pass`,
+        api: `${prefix}_api`,
+        mode: `${prefix}_mode`,
+        enc: `${prefix}_enc`
+    };
+}
 
 async function getOrCreateCredKey() {
     const data = await chrome.storage.local.get(['credKey']);
@@ -80,47 +106,100 @@ export async function pullStoredData() {
 
     applyActiveServer();
 
-    const credPrefix = activeServerId ? `creds_${activeServerId}` : 'creds_default';
-    const session = await chrome.storage.session.get([`${credPrefix}_user`, `${credPrefix}_pass`]);
-    if (session[`${credPrefix}_user`]) {
-        username = session[`${credPrefix}_user`];
-        password = session[`${credPrefix}_pass`] ?? '';
-    } else {
-        const local = await chrome.storage.local.get([`${credPrefix}_user`, `${credPrefix}_pass`, `${credPrefix}_enc`, 'credKey', 'username', 'password', 'credentialsEncrypted']);
-        if (local[`${credPrefix}_enc`] && local[`${credPrefix}_user`]) {
-            const key = await getOrCreateCredKey();
-            username = await decryptCredential(local[`${credPrefix}_user`], key);
-            password = await decryptCredential(local[`${credPrefix}_pass`] ?? '', key);
-        } else if (local.credentialsEncrypted && local.username) {
-            const key = await getOrCreateCredKey();
-            username = await decryptCredential(local.username, key);
-            password = await decryptCredential(local.password ?? '', key);
+    resetCredentialsState();
+    const credPrefix = getCredentialPrefix();
+    const keys = credentialKeys(credPrefix);
+    const session = await chrome.storage.session.get([keys.mode, keys.user, keys.pass, keys.api]);
+    const sessionMode = session[keys.mode];
+    if (sessionMode) {
+        authMode = sessionMode === 'apiKey' ? 'apiKey' : 'basic';
+        if (authMode === 'apiKey') {
+            apiKey = session[keys.api] ?? '';
         } else {
-            username = local.username ?? '';
-            password = local.password ?? '';
+            username = session[keys.user] ?? '';
+            password = session[keys.pass] ?? '';
         }
+        return;
+    }
+    if (session[keys.user] || session[keys.pass]) {
+        authMode = 'basic';
+        username = session[keys.user] ?? '';
+        password = session[keys.pass] ?? '';
+        return;
+    }
+
+    const local = await chrome.storage.local.get([keys.user, keys.pass, keys.api, keys.mode, keys.enc, ...LEGACY_CREDENTIAL_KEYS]);
+    if (local[keys.mode]) {
+        authMode = local[keys.mode] === 'apiKey' ? 'apiKey' : 'basic';
+    }
+    if (local[keys.enc]) {
+        const key = await getOrCreateCredKey();
+        if (authMode === 'apiKey') {
+            if (local[keys.api]) apiKey = await decryptCredential(local[keys.api], key);
+        } else {
+            if (local[keys.user]) username = await decryptCredential(local[keys.user], key);
+            if (local[keys.pass]) password = await decryptCredential(local[keys.pass], key);
+        }
+        return;
+    }
+
+    if (local.credentialsEncrypted && local.username) {
+        const key = await getOrCreateCredKey();
+        username = await decryptCredential(local.username, key);
+        password = await decryptCredential(local.password ?? '', key);
+        authMode = 'basic';
+    } else {
+        username = local.username ?? '';
+        password = local.password ?? '';
+        authMode = 'basic';
     }
 }
 
-export async function setCredentials(u, p, remember) {
-    username = u;
-    password = p;
-    const credPrefix = activeServerId ? `creds_${activeServerId}` : 'creds_default';
-    const sessionData = {};
-    sessionData[`${credPrefix}_user`] = u;
-    sessionData[`${credPrefix}_pass`] = p;
-    await chrome.storage.session.set(sessionData);
+async function clearStoredCredentials(credPrefix) {
+    const keys = credentialKeys(credPrefix);
+    await chrome.storage.session.remove([keys.user, keys.pass, keys.api, keys.mode]);
+    await chrome.storage.local.remove([keys.user, keys.pass, keys.api, keys.mode, keys.enc, ...LEGACY_CREDENTIAL_KEYS]);
+}
+
+export async function setCredentials(creds, remember) {
+    const credPrefix = getCredentialPrefix();
+    const keys = credentialKeys(credPrefix);
+    if (!creds) {
+        resetCredentialsState();
+        await clearStoredCredentials(credPrefix);
+        return;
+    }
+
+    authMode = creds.mode === 'apiKey' ? 'apiKey' : 'basic';
+    username = authMode === 'basic' ? (creds.username ?? '') : '';
+    password = authMode === 'basic' ? (creds.password ?? '') : '';
+    apiKey = authMode === 'apiKey' ? (creds.apiKey ?? '') : '';
+
+    if (authMode === 'apiKey') {
+        await chrome.storage.session.set({ [keys.mode]: authMode, [keys.api]: apiKey });
+        await chrome.storage.session.remove([keys.user, keys.pass]);
+    } else {
+        await chrome.storage.session.set({ [keys.mode]: authMode, [keys.user]: username, [keys.pass]: password });
+        await chrome.storage.session.remove([keys.api]);
+    }
+
     if (remember) {
         const key = await getOrCreateCredKey();
-        const encUser = await encryptCredential(u, key);
-        const encPass = await encryptCredential(p, key);
-        const localData = {};
-        localData[`${credPrefix}_user`] = encUser;
-        localData[`${credPrefix}_pass`] = encPass;
-        localData[`${credPrefix}_enc`] = true;
-        await chrome.storage.local.set(localData);
+        if (authMode === 'apiKey') {
+            const localData = { [keys.mode]: authMode, [keys.enc]: true };
+            if (apiKey) localData[keys.api] = await encryptCredential(apiKey, key);
+            await chrome.storage.local.set(localData);
+            await chrome.storage.local.remove([keys.user, keys.pass]);
+        } else {
+            const localData = { [keys.mode]: authMode, [keys.enc]: true };
+            if (username) localData[keys.user] = await encryptCredential(username, key);
+            if (password) localData[keys.pass] = await encryptCredential(password, key);
+            await chrome.storage.local.set(localData);
+            await chrome.storage.local.remove([keys.api]);
+        }
+        await chrome.storage.local.remove(LEGACY_CREDENTIAL_KEYS);
     } else {
-        await chrome.storage.local.remove([`${credPrefix}_user`, `${credPrefix}_pass`, `${credPrefix}_enc`]);
+        await chrome.storage.local.remove([keys.user, keys.pass, keys.api, keys.mode, keys.enc, ...LEGACY_CREDENTIAL_KEYS]);
     }
 }
 
@@ -178,12 +257,19 @@ export async function setActiveServer(id) {
 }
 
 export function getAuthHeaders() {
+    if (authMode === 'apiKey') {
+        return apiKey ? { 'X-API-Key': apiKey } : {};
+    }
     if (!username || !password) return {};
     try {
         return { 'Authorization': 'Basic ' + btoa(`${username}:${password}`) };
     } catch {
         return {};
     }
+}
+
+export function getAuthMode() {
+    return authMode;
 }
 
 export async function incrementStat(key) {
